@@ -3,18 +3,13 @@ from fastapi.responses import HTMLResponse
 from typing import List
 from app.routers.admin_film import list_film  # ambil daftar film dari router film
 from app.models import Schedule
+from app.models import Movie
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/admin/schedules", tags=["Admin - Jadwal"])
 
 # Database sementara
-studios = [
-    {"id": 1, "name": "Studio 1"},
-    {"id": 2, "name": "Studio 2"},
-    {"id": 3, "name": "Studio 3"},
-    {"id": 4, "name": "Studio 4"},
-    {"id": 5, "name": "Studio 5"},
-]
-
+studios = []
 schedules = Schedule = []
 schedule_counter = 1
 
@@ -47,38 +42,34 @@ def init_seats():
 
 
 # === CREATE beberapa jadwal sekaligus ===
-@router.post("/multiple")
-def create_multiple_schedules(movie_ids: List[int], studio_ids: List[int], date: str, time: str):
+@router.post("/")
+@router.post("/schedules")
+def buat_jadwal(schedule: Schedule):
     global schedule_counter
-    created_schedules = []
-
-    for movie_id in movie_ids:
-        movie = next((m for m in list_film if m["id"] == movie_id), None)
-        if not movie:
-            continue
-        for studio_id in studio_ids:
-            studio = next((s for s in studios if s["id"] == studio_id), None)
-            if not studio:
-                continue
-            new_schedule = {
-                "id": schedule_counter,
-                "movie_id": movie_id,
-                "movie_title": movie["title"],
-                "studio_id": studio_id,
-                "studio_name": studio["name"],
-                "date": date,
-                "time": time,
-                "seats": init_seats()
-            }
-            schedules.append(new_schedule)
-            created_schedules.append(new_schedule)
-            schedule_counter += 1
-    return {"message": "Beberapa jadwal berhasil dibuat", "schedules": created_schedules}
+    # cari film dari list_film yang diimport dari admin_film
+    for f in list_film:
+        if f["id"] == schedule.movie_id:
+            movie = f
+            break
+        else:
+            raise HTTPException(status_code=404, detail="Film tidak ditemukan")
+    new_schedule = {
+        "id": schedule_counter,
+        "movie_id": movie["id"],
+        "movie_title": movie["title"],
+        "duration": movie["duration"],
+        "studio": studio,
+        "date": date,
+        "time": time,
+        "seats": init_seats()}
+    schedules.append(new_schedule)
+    schedule_counter += 1
+    return {"message": "Beberapa jadwal berhasil dibuat", "schedules": new_schedule}
 
 
 # === READ jadwal per film ===
 @router.get("/movies/{movie_id}")
-def get_schedules_for_movie(movie_id: int):
+def get_schedules_for_movie(movie_id: str):
     movie_schedules = [s for s in schedules if s["movie_id"] == movie_id]
     if not movie_schedules:
         raise HTTPException(status_code=404, detail="Tidak ada jadwal untuk film ini")
