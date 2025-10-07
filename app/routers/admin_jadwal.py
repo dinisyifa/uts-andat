@@ -15,7 +15,7 @@ studios = [
     {"id": 5, "name": "Studio 5"},
 ]
 
-schedules = []
+schedules = Schedule = []
 schedule_counter = 1
 
 
