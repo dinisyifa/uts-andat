@@ -17,5 +17,7 @@ class Movie(BaseModel):
     id: str                 # contoh: "MOV001"
     title: str              # contoh: "Avengers: Endgame"
     duration: str           # contoh: "3h 20m"
-    price: int              # contoh: 50000
+    genre: str 
+    sutradara: str
     rating: Optional[float] = None  # opsional (bisa diisi nanti)
+    price: int              # contoh: 50000
