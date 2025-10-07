@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import HTMLResponse
 from typing import List
 from app.routers.admin_film import list_film  # ambil daftar film dari router film
+from app.models import Schedule
 
 router = APIRouter(prefix="/admin/schedules", tags=["Admin - Jadwal"])
 
