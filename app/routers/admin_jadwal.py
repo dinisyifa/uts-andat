@@ -1,16 +1,14 @@
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import HTMLResponse
 from typing import List
-from app.routers.admin_film import list_film  # ambil daftar film dari router film
 from app.models import Schedule
-from app.models import Movie
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/admin/schedules", tags=["Admin - Jadwal"])
+
 
 # Database sementara
 studios = []
-schedules = Schedule = []
+schedules = []
 schedule_counter = 1
 
 
@@ -42,29 +40,26 @@ def init_seats():
 
 
 # === CREATE beberapa jadwal sekaligus ===
-@router.post("/")
-@router.post("/schedules")
-def buat_jadwal(schedule: Schedule):
+router = APIRouter(prefix="/admin/schedules", tags=["Admin - Jadwal"])
+@router.post("")
+def create_schedule(schedule: Schedule):
+    from app.routers.admin_film import list_film  # ambil daftar film dari router film
     global schedule_counter
-    # cari film dari list_film yang diimport dari admin_film
-    for f in list_film:
-        if f["id"] == schedule.movie_id:
-            movie = f
-            break
-        else:
-            raise HTTPException(status_code=404, detail="Film tidak ditemukan")
+
+    if schedule.movie_id not in [f["id"] for f in list_film]:
+        raise HTTPException(status_code=404, detail="Film tidak ditemukan")
+        
     new_schedule = {
         "id": schedule_counter,
-        "movie_id": movie["id"],
-        "movie_title": movie["title"],
-        "duration": movie["duration"],
-        "studio": studio,
-        "date": date,
-        "time": time,
-        "seats": init_seats()}
-    schedules.append(new_schedule)
+        "movie_id": schedule.movie_id,
+        "studio": schedule.studio,
+        "date": schedule.date,
+        "time": schedule.time,
+        "seats": init_seats()
+    }
     schedule_counter += 1
-    return {"message": "Beberapa jadwal berhasil dibuat", "schedules": new_schedule}
+    schedules.append(new_schedule)
+    return {"message": "Jadwal berhasil dibuat", "data": new_schedule}
 
 
 # === READ jadwal per film ===
