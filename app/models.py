@@ -21,3 +21,18 @@ class Movie(BaseModel):
     sutradara: str
     rating: Optional[float] = None  # opsional (bisa diisi nanti)
     price: int              # contoh: 50000
+
+
+# ===============================
+# 2️⃣ MODEL UNTUK ADMIN JADWAL    
+# ===============================
+class Schedule(BaseModel):
+    """
+    Representasi data satu jadwal tayang film di studio tertentu.
+    """
+    id: int                 # contoh: 1
+    movie_id: int           # contoh: 1 (ID film yang dijadwalkan)
+    studio_id: int          # contoh: 1 (ID studio tempat film ditayangkan)
+    date: str               # contoh: "2023-10-01"
+    time: str               # contoh: "19:00"
+    seats: List[Dict]       # contoh: [{"seat": "a1", "available": True}, ...]
