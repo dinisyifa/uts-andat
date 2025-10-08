@@ -4,7 +4,7 @@
 # ==========================================
 
 from fastapi import FastAPI
-from app.routers import admin_film  # folder app/routers/ ada file __init__.py
+from app.routers import admin_film , admin_jadwal # folder app/routers/ ada file __init__.py
 
 # Inisialisasi aplikasi FastAPI
 app = FastAPI(
@@ -15,6 +15,7 @@ app = FastAPI(
 
 # Registrasi router (Admin Film & Studio)
 app.include_router(admin_film.router, tags=["Admin - Film & Studio"])
+app.include_router(admin_jadwal.router, tags=["Admin - Jadwal"])
 
 # Endpoint root (opsional, hanya untuk cek server jalan)
 @app.get("/")

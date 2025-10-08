@@ -33,3 +33,19 @@ class Studio(BaseModel):
     id_studio: str          # contoh: "st1"
     id_movie: str           # contoh: "mov1"
     title: str
+
+# ===============================
+# MODEL UNTUK JADWAL PENAYANGAN
+# ===============================
+class Schedule(BaseModel):
+    """
+    Representasi satu jadwal penayangan film di studio tertentu.
+    """
+    id_jadwal: Optional[str] = None  # akan diisi otomatis (sch1, sch2, dst)
+    movie_id: str                   # relasi ke Movie
+    movie_title: Optional[str] = None
+    studio_id: str                  # relasi ke Studio
+    studio_name: Optional[str] = None
+    date: str
+    time: str
+    seats: Optional[List[List[Dict[str, Optional[bool]]]]] = None
