@@ -1,6 +1,7 @@
+from sched import scheduler
 from fastapi import APIRouter, HTTPException
 from app.routers.admin_film import list_film
-from app.routers.admin_jadwal import schedules
+from app.routers.admin_jadwal import list_jadwal
 
 router = APIRouter(prefix="/user/catalog", tags=["User - Catalog"])
 
@@ -12,7 +13,7 @@ def lihat_daftar_film_dan_jadwal():
     for film in list_film:
         film_jadwal = [
             {"studio": s["studio_name"], "time": s["time"]}
-            for s in schedules if s["movie_id"] == film["id"]
+            for s in scheduler if s["movie_id"] == film["id"]
         ]
         katalog.append({
             "title": film["title"],
