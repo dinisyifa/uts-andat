@@ -1,10 +1,14 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Movie
+from app.models import Movie, Studio
 
 router = APIRouter()
 
 # Simulasi "database" sementara dengan list di memori
-list_film = []
+list_film = [{"id": "mov1", "title": "Avengers: Endgame", "duration": "200 menit", "genre": "Action, Fantasy", "sutradara": "Anthony Russo, Joe Russo", "rating_usia": "PG-13", "price": "Rp40.000"},
+{"id": "mov2", "title": "The Conjuring", "duration": "120 menit", "genre": "Horror, Mystery", "sutradara": "James Wan", "rating_usia": "17+", "price": "Rp40.000"},
+{"id": "mov3", "title": "Frozen", "duration": "130 menit", "genre": "Family, Musical", "sutradara": "Jennifer Lee, Chris Buck", "rating_usia": "PG", "price": "Rp40.000"},
+{"id": "mov4", "title": "Komang", "duration": "130 menit", "genre": "Drama, Romance", "sutradara": "Naya Anindita", "rating_usia": "13+", "price": "Rp40.000"}
+]
 
 # CREATE - Tambah Film
 @router.post("/movies")
@@ -48,3 +52,76 @@ def hapus_film(movie_id: str):
             del list_film[idx]
             return {"message": f"Film dengan ID {movie_id} berhasil dihapus"}
     raise HTTPException(status_code=404, detail="Film tidak ditemukan")
+
+
+# ==============================
+# CRUD STUDIO
+# ==============================
+list_studio = [
+    {"id_studio": "st1", "id_movie": "mov1", "title": "Avengers: Endgame"},
+    {"id_studio": "st2", "id_movie": "mov2", "title": "The Conjuring"},
+    {"id_studio": "st3", "id_movie": "mov3", "title": "Frozen"},
+    {"id_studio": "st4", "id_movie": "mov4", "title": "Komang"},
+]
+
+@router.post("/studios")
+def tambah_studio(studio: Studio):
+    # Cek ID studio duplikat
+    for st in list_studio:
+        if st["id_studio"] == studio.id_studio:
+            raise HTTPException(status_code=400, detail="ID studio sudah ada")
+
+    # Pastikan ID movie ada
+    film_ditemukan = next((f for f in list_film if f["id"] == studio.id_movie), None)
+    if not film_ditemukan:
+        raise HTTPException(status_code=404, detail="ID movie tidak ditemukan di daftar film")
+
+    # Tambahkan studio baru
+    data_baru = {
+        "id_studio": studio.id_studio,
+        "id_movie": studio.id_movie,
+        "title": film_ditemukan["title"]
+    }
+    list_studio.append(data_baru)
+    return {"message": "Studio berhasil ditambahkan", "data": data_baru}
+
+
+@router.get("/studios")
+def lihat_semua_studio():
+    if not list_studio:
+        raise HTTPException(status_code=404, detail="Belum ada studio yang terdaftar")
+    return {"message": "Daftar semua studio berhasil diambil", "data": list_studio}
+
+
+@router.get("/studios/{studio_id}")
+def lihat_detail_studio(studio_id: str):
+    for st in list_studio:
+        if st["id_studio"] == studio_id:
+            return {"message": "Detail studio ditemukan", "data": st}
+    raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
+
+
+@router.put("/studios/{studio_id}")
+def perbarui_studio(studio_id: str, studio: Studio):
+    for idx, st in enumerate(list_studio):
+        if st["id_studio"] == studio_id:
+            film_ditemukan = next((f for f in list_film if f["id"] == studio.id_movie), None)
+            if not film_ditemukan:
+                raise HTTPException(status_code=404, detail="ID movie tidak ditemukan")
+
+            list_studio[idx] = {
+                "id_studio": studio_id,
+                "id_movie": studio.id_movie,
+                "title": film_ditemukan["title"]
+            }
+            return {"message": "Data studio berhasil diperbarui", "data": list_studio[idx]}
+    raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
+
+
+@router.delete("/studios/{studio_id}")
+def hapus_studio(studio_id: str):
+    for idx, st in enumerate(list_studio):
+        if st["id_studio"] == studio_id:
+            del list_studio[idx]
+            return {"message": f"Studio dengan ID {studio_id} berhasil dihapus"}
+    raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
