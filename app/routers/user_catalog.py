@@ -3,6 +3,10 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple, Dict
 
+# ambil data Admin (Ressy & Dini) untuk endpoint user
+from app.routers.admin_film import list_film
+from app.routers.admin_jadwal import list_jadwal
+
 # ---------------------------
 # Router & Konstanta Layout
 # ---------------------------
@@ -18,9 +22,9 @@ def _empty_matrix():
     return [["." for _ in range(COLS)] for _ in range(ROWS)]
 
 # ---------------------------
-# Demo Jadwal Studio 1 (hari ini)
+# Demo Jadwal Studio 1 (hari ini) – untuk uji cepat
 # ---------------------------
-TODAY = "2025-10-07"  # untuk demo; bisa ganti: date.today().isoformat()
+TODAY = "2025-10-07"
 studio1_schedules = [
     {"id": 101, "studio": "1", "film": "Film A", "tanggal": TODAY, "jam": "10:00-12:00"},
     {"id": 102, "studio": "1", "film": "Film B", "tanggal": TODAY, "jam": "13:00-15:00"},
@@ -43,9 +47,7 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 def _parse_label(label: str) -> Optional[Tuple[int, int]]:
-    """
-    'A1' -> (0,0), 'C10' -> (2,9). Return None jika format/range salah.
-    """
+    """'A1' -> (0,0), 'C10' -> (2,9)."""
     if not label:
         return None
     s = label.strip().upper()
@@ -65,7 +67,6 @@ def _parse_label(label: str) -> Optional[Tuple[int, int]]:
     return (r, c)
 
 def _sweep_expired_holds():
-    """Lepaskan hold yang sudah expired."""
     now = _utcnow()
     expired = []
     for (sched_id, seat_label), exp_at in list(HOLDS.items()):
@@ -81,8 +82,7 @@ def _sweep_expired_holds():
 
 def _set_hold(schedule_id: int, labels: list[str]):
     ok, ng = [], []
-    now = _utcnow()
-    exp = now + timedelta(minutes=HOLD_TTL_MINUTES)
+    exp = _utcnow() + timedelta(minutes=HOLD_TTL_MINUTES)
     mat = SEATS_BY_SCHEDULE.get(schedule_id)
     if mat is None:
         return [], [(lbl, "schedule_not_found") for lbl in labels]
@@ -126,11 +126,10 @@ def _confirm_sold(schedule_id: int, labels: list[str]):
     return ok, ng
 
 # ---------------------------
-# Endpoints (User)
+# Endpoints (User – Kursi)
 # ---------------------------
 @router.get("/studio/1/schedules/today")
 def studio1_today():
-    """Lihat 3 jadwal hari ini untuk Studio 1 (demo)."""
     return {"date": TODAY, "studio": "1", "schedules": studio1_schedules}
 
 @router.get("/schedules/{schedule_id}/seats")
@@ -140,7 +139,6 @@ def seat_map(schedule_id: int):
     if mat is None:
         raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
 
-    # Header & ASCII display
     left  = " ".join(str(i) for i in range(1, AISLE_AFTER_COL + 1))
     right = " ".join(str(i) for i in range(AISLE_AFTER_COL + 1, COLS + 1))
     lines = ["          SCREEN", f"   {left}   {right}"]
@@ -208,3 +206,31 @@ def release_hold(schedule_id: int, seats: str = Query(..., description="lepas ho
         else:
             not_released.append({"seat": label.upper(), "reason": "not_on_hold"})
     return {"schedule_id": schedule_id, "released": released, "failed": not_released}
+
+# ---------------------------
+# Endpoints (User – Film & Jadwal)
+# ---------------------------
+@router.get("/movies")
+def user_movies():
+    if not list_film:
+        raise HTTPException(status_code=404, detail="Belum ada film")
+    katalog = []
+    for film in list_film:
+        showtimes = [
+            {
+                "schedule_id": j.get("id_jadwal"),
+                "studio": j.get("studio_name"),
+                "date": j.get("date"),
+                "time": j.get("time"),
+            }
+            for j in list_jadwal
+            if j.get("movie_id") == film.get("id")
+        ]
+        katalog.append({
+            "id": film.get("id"),
+            "title": film.get("title"),
+            "duration": film.get("duration"),
+            "price": film.get("price"),
+            "showtimes": showtimes,
+        })
+    return {"movies": katalog}
