@@ -1,10 +1,27 @@
 # app/main.py
+# ==========================================
+# Entry point utama aplikasi FastAPI
+# ==========================================
+
 from fastapi import FastAPI
-from .routers.user_catalog import router as user_router  # <- pakai titik
+from app.routers import admin_film, admin_jadwal, user_catalog  # semua router
 
-app = FastAPI(title="Movie Booking System")
-app.include_router(user_router)
+# Inisialisasi aplikasi FastAPI
+app = FastAPI(
+    title="Movie Booking System",
+    description="Sistem pemesanan tiket bioskop sederhana",
+    version="1.1.0",
+)
 
+# Registrasi router
+app.include_router(admin_film.router, tags=["Admin - Film & Studio"])
+app.include_router(admin_jadwal.router, tags=["Admin - Jadwal"])
+app.include_router(user_catalog.router, tags=["User"])
+
+# Endpoint root (cek server)
 @app.get("/")
 def home():
-    return {"message": "Movie Booking API — Person 3 endpoints active!"}
+    return {
+        "message": "Movie Booking API aktif (Admin & User)",
+        "info": "Coba /docs untuk Swagger UI.",
+    }
