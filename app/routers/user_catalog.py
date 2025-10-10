@@ -11,7 +11,7 @@ from app.models import Movie, Studio, Schedule, CatalogDetail, SeatDetail
 # ---------------------------
 # Router & Konstanta Layout
 # ---------------------------
-router = APIRouter(prefix="/user", tags=["User"])
+router = APIRouter()
 
 ROWS = 8
 COLS = 12
