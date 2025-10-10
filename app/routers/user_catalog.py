@@ -6,6 +6,7 @@ from typing import Optional, Tuple, Dict, List, Any
 # ambil data Admin (Ressy & Dini)
 from app.routers.admin_film import list_film      # list[dict]
 from app.routers.admin_jadwal import list_jadwal  # list[dict]
+from app.models import Movie, Studio, Schedule, CatalogDetail, SeatDetail
 
 # ---------------------------
 # Router & Konstanta Layout
