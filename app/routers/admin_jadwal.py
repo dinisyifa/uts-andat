@@ -5,7 +5,248 @@ from app.models import Movie, Studio, Schedule
 router = APIRouter()
 
 # Simpan jadwal di memori
-list_jadwal = []
+list_jadwal = [
+    Schedule(
+        id_jadwal="sch1",
+        movie_id="mov1",
+        movie_title="Avengers: Endgame",
+        studio_id="st1",
+        studio_name="Studio 1",
+        date="2025-10-15",  # contoh tanggal, sesuaikan dengan kebutuhan
+        time="12.15 - 15.05",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch2",
+        movie_id="mov1",
+        movie_title="Avengers: Endgame",
+        studio_id="st2",
+        studio_name="Studio 2",
+        date="2025-10-15",
+        time="14.45 - 17.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch3",
+        movie_id="mov1",
+        movie_title="Avengers: Endgame",
+        studio_id="st3",
+        studio_name="Studio 3",
+        date="2025-10-15",
+        time="14.50 - 17.15",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch4",
+        movie_id="mov1",
+        movie_title="Avengers: Endgame",
+        studio_id="st4",
+        studio_name="Studio 4",
+        date="2025-10-15",
+        time="13.20 - 16.40",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch5",
+        movie_id="mov1",
+        movie_title="Avengers: Endgame",
+        studio_id="st5",
+        studio_name="Studio 5",
+        date="2025-10-15",
+        time="19.40 - 23.00",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch6",
+        movie_id="mov2",
+        movie_title="The Conjuring",
+        studio_id="st2",
+        studio_name="Studio 2",
+        date="2025-10-15",
+        time="12.15 - 14.15",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch7",
+        movie_id="mov2",
+        movie_title="The Conjuring",
+        studio_id="st3",
+        studio_name="Studio 3",
+        date="2025-10-15",
+        time="17.30 - 19.30",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch8",
+        movie_id="mov2",
+        movie_title="The Conjuring",
+        studio_id="st4",
+        studio_name="Studio 4",
+        date="2025-10-15",
+        time="17.00 - 19.00",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch9",
+        movie_id="mov2",
+        movie_title="The Conjuring",
+        studio_id="st5",
+        studio_name="Studio 5",
+        date="2025-10-15",
+        time="10.00 - 12.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch10",
+        movie_id="mov2",
+        movie_title="The Conjuring",
+        studio_id="st1",
+        studio_name="Studio 1",
+        date="2025-10-15",
+        time="12.10 - 14.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch11",
+        movie_id="mov3",
+        movie_title="Frozen",
+        studio_id="st3",
+        studio_name="Studio 3",
+        date="2025-10-15",
+        time="10.00 - 12.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch12",
+        movie_id="mov3",
+        movie_title="Frozen",
+        studio_id="st4",
+        studio_name="Studio 4",
+        date="2025-10-15",
+        time="19.20 - 20.30",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch13",
+        movie_id="mov3",
+        movie_title="Frozen",
+        studio_id="st5",
+        studio_name="Studio 5",
+        date="2025-10-15",
+        time="16.55 - 19.15",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch14",
+        movie_id="mov3",
+        movie_title="Frozen",
+        studio_id="st1",
+        studio_name="Studio 1",
+        date="2025-10-15",
+        time="17.00 - 19.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch15",
+        movie_id="mov3",
+        movie_title="Frozen",
+        studio_id="st2",
+        studio_name="Studio 2",
+        date="2025-10-15",
+        time="17.40 - 20.00",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch16",
+        movie_id="mov4",
+        movie_title="Komang",
+        studio_id="st4",
+        studio_name="Studio 4",
+        date="2025-10-15",
+        time="11.00 - 13.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch17",
+        movie_id="mov4",
+        movie_title="Komang",
+        studio_id="st5",
+        studio_name="Studio 5",
+        date="2025-10-15",
+        time="14.45 - 16.55",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch18",
+        movie_id="mov4",
+        movie_title="Komang",
+        studio_id="st1",
+        studio_name="Studio 1",
+        date="2025-10-15",
+        time="10.00 - 12.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch19",
+        movie_id="mov4",
+        movie_title="Komang",
+        studio_id="st2",
+        studio_name="Studio 2",
+        date="2025-10-15",
+        time="20.30 - 22.40",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch20",
+        movie_id="mov4",
+        movie_title="Komang",
+        studio_id="st3",
+        studio_name="Studio 3",
+        date="2025-10-15",
+        time="20.00 - 22.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch21",
+        movie_id="mov5",
+        movie_title="Detective Conan: One-eyed Flashback",
+        studio_id="st1",
+        studio_name="Studio 1",
+        date="2025-10-15",
+        time="14.30 - 16.35",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch22",
+        movie_id="mov5",
+        movie_title="Detective Conan: One-eyed Flashback",
+        studio_id="st2",
+        studio_name="Studio 2",
+        date="2025-10-15",
+        time="10.00 - 12.05",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch23",
+        movie_id="mov5",
+        movie_title="Detective Conan: One-eyed Flashback",
+        studio_id="st3",
+        studio_name="Studio 3",
+        date="2025-10-15",
+        time="12.15 - 14.10",
+        seats=None
+    ),
+    Schedule(
+        id_jadwal="sch24",
+        movie_id="mov5",
+        movie_title="Detective Conan: One-eyed Flashback",
+        studio_id="st4",
+        studio_name="Studio 4",
+        date="2025-10-15",
+        time="20.40 - 22.45",
+        seats=None
+    )
+]
 schedule_counter = 1  # untuk ID unik jadwal
 
 

@@ -59,9 +59,29 @@ def hapus_film(movie_id: str):
 # ==============================
 list_studio = [
     {"id_studio": "st1", "id_movie": "mov1", "title": "Avengers: Endgame"},
+    {"id_studio": "st2", "id_movie": "mov2", "title": "Avengers: Endgame"},
+    {"id_studio": "st3", "id_movie": "mov3", "title": "Avengers: Endgame"},
+    {"id_studio": "st4", "id_movie": "mov4", "title": "Avengers: Endgame"},
+    {"id_studio": "st5", "id_movie": "mov4", "title": "Avengers: Endgame"},
+    {"id_studio": "st1", "id_movie": "mov1", "title": "The Conjuring"},
     {"id_studio": "st2", "id_movie": "mov2", "title": "The Conjuring"},
+    {"id_studio": "st3", "id_movie": "mov3", "title": "The Conjuring"},
+    {"id_studio": "st4", "id_movie": "mov4", "title": "The Conjuring"},
+    {"id_studio": "st5", "id_movie": "mov4", "title": "The Conjuring"},
+    {"id_studio": "st1", "id_movie": "mov1", "title": "Frozen"},
+    {"id_studio": "st2", "id_movie": "mov2", "title": "Frozen"},
     {"id_studio": "st3", "id_movie": "mov3", "title": "Frozen"},
+    {"id_studio": "st4", "id_movie": "mov4", "title": "Frozen"},
+    {"id_studio": "st5", "id_movie": "mov4", "title": "Frozen"},
+    {"id_studio": "st1", "id_movie": "mov1", "title": "Komang"},
+    {"id_studio": "st2", "id_movie": "mov2", "title": "Komang"},
+    {"id_studio": "st3", "id_movie": "mov3", "title": "Komang"},
     {"id_studio": "st4", "id_movie": "mov4", "title": "Komang"},
+    {"id_studio": "st5", "id_movie": "mov4", "title": "Komang"},
+    {"id_studio": "st1", "id_movie": "mov1", "title": "Detective Conan: One-eyed Flashback"},
+    {"id_studio": "st2", "id_movie": "mov2", "title": "Detective Conan: One-eyed Flashback"},
+    {"id_studio": "st3", "id_movie": "mov3", "title": "Detective Conan: One-eyed Flashback"},
+    {"id_studio": "st4", "id_movie": "mov4", "title": "Detective Conan: One-eyed Flashback"},
 ]
 
 @router.post("/studios")
