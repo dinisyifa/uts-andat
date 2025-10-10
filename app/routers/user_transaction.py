@@ -1,5 +1,6 @@
 # file: app/routers/user_transaction.py
 
+from datetime import datetime, timedelta
 import uuid
 from typing import List
 from fastapi import APIRouter, HTTPException, status
@@ -97,6 +98,7 @@ def select_payment_method(payload: PaymentMethodRequest):
     # Buat pesanan sementara
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
     total_price = sum(item.get("price", 0) for item in cart)
+    expires_at = datetime.utcnow() + timedelta(minutes=5) # Pesanan batal dalam 5 menit
 
     # Buat daftar tiket yang bersih untuk respons
     clean_tickets = []
@@ -112,6 +114,7 @@ def select_payment_method(payload: PaymentMethodRequest):
     pending_orders[order_id] = {
         "total_price": total_price,
         "payment_method": payload.payment_method,
+        "expires_at": expires_at,
         "tickets_full_data": list(cart) # Simpan data lengkap dari keranjang
     }
 
@@ -123,6 +126,7 @@ def select_payment_method(payload: PaymentMethodRequest):
         order_id=order_id,
         total_price=total_price,
         payment_method=payload.payment_method,
+        expires_at=expires_at,
         tickets=clean_tickets
     )
 
@@ -134,6 +138,12 @@ def confirm_checkout(order_id: str):
     order = pending_orders.get(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan atau sudah kedaluwarsa.")
+    
+    # Cek jika pesanan sudah kedaluwarsa
+    if datetime.utcnow() > order["expires_at"]:
+        # (Logika tambahan: kembalikan status kursi menjadi 'available' jika perlu)
+        pending_orders.pop(order_id, None)
+        raise HTTPException(status_code=410, detail="Pesanan sudah kedaluwarsa.")
 
     # Jika valid, finalisasi transaksi
     # 1. Ubah status kursi menjadi "booked" secara permanen
