@@ -5,12 +5,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, status
 from app.models import CartAddItem, CartItemResponse, TransactionDetail
 
-# --- Impor Data dari Modul Admin ---
-# Kita asumsikan data ini adalah list of dictionaries
 from app.routers.admin_film import list_film
 from app.routers.admin_jadwal import list_jadwal
 
-# --- Variabel Lokal untuk Modul Ini ---
+# variabel global
 cart = []
 transaction_history = []
 

@@ -25,7 +25,7 @@ app = FastAPI(
     title="Movie Booking System",
     description="Sistem pemesanan tiket bioskop sederhana",
     version="1.2.0",
-    openapi_tags=tags_metadata  # <-- TAMBAHKAN PARAMETER INI
+    openapi_tags=tags_metadata 
 )
 
 # ---------------------------
