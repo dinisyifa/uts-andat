@@ -276,7 +276,7 @@ def init_seats():
 
 # CREATE - Tambah jadwal baru
 @router.post("/schedules")
-def tambah_jadwal(movie_id: str, studio_id: str, date: str, time: str):
+def tambah_jadwal(Schedule: Schedule):
     global schedule_counter
 
     # Cek movie
