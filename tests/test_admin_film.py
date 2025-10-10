@@ -1,72 +1,134 @@
 from fastapi.testclient import TestClient
-from main import app
+from app.main import app 
 
 client = TestClient(app)
 
-def test_tambah_film():
-    film_baru = {
-        "id": "F001",
-        "title": "Avengers Endgame",
-        "genre": "Action",
-        "duration": 200 "menit",
-        "price": 40000
-    }
-    response = client.post("/movies", json=film_baru)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["message"] == "Film berhasil ditambahkan"
-    assert data["data"]["title"] == "Avengers: Endgame"
 
-def test_tambah_film_duplikat():
-    film_duplikat = {
-        "id": "F001",
-        "title": "Meow Wars",
-        "genre": "Action",
-        "duration": 120,
-        "price": 40000
-    }
-    response = client.post("/movies", json=film_duplikat)
-    assert response.status_code == 400
-    data = response.json()
-    assert data["detail"] == "ID film sudah ada"
+# ============================
+# TEST CRUD MOVIES
+# ============================
 
-def test_lihat_semua_film():
+def test_get_all_movies():
     response = client.get("/movies")
     assert response.status_code == 200
     data = response.json()
-    assert data["message"] == "Daftar semua film berhasil diambil"
+    assert "data" in data
     assert isinstance(data["data"], list)
-    assert len(data["data"]) > 0
 
-def test_lihat_detail_film():
-    response = client.get("/movies/F001")
+
+def test_get_single_movie():
+    response = client.get("/movies/mov1")
     assert response.status_code == 200
     data = response.json()
-    assert data["message"] == "Detail film ditemukan"
-    assert data["data"]["id"] == "F001"
+    assert data["data"]["id"] == "mov1"
 
-def test_perbarui_film():
-    film_update = {
-        "id": "F001",
-        "title": "Meow Wars: The Return",
+
+def test_create_movie_success():
+    new_movie = {
+        "id": "mov99",
+        "title": "Testing The Movie",
+        "duration": "123 menit",
         "genre": "Sci-Fi",
-        "duration": 130,
-        "price": 55000
+        "sutradara": "John Doe",
+        "rating_usia": "13+",
+        "price": "Rp50.000"
     }
-    response = client.put("/movies/F001", json=film_update)
+    response = client.post("/movies", json=new_movie)
     assert response.status_code == 200
     data = response.json()
-    assert data["message"] == "Data film berhasil diperbarui"
-    assert data["data"]["title"] == "Meow Wars: The Return"
+    assert data["data"]["id"] == "mov99"
 
-def test_hapus_film():
-    response = client.delete("/movies/F001")
+
+def test_create_movie_duplicate_id():
+    new_movie = {
+        "id": "mov99",
+        "title": "Duplicate Test",
+        "duration": "120 menit",
+        "genre": "Action",
+        "sutradara": "Jane Doe",
+        "rating_usia": "PG-13",
+        "price": "Rp45.000"
+    }
+    response = client.post("/movies", json=new_movie)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "ID film sudah ada"
+
+
+def test_update_movie():
+    updated_data = {
+        "id": "mov99",
+        "title": "Updated Movie",
+        "duration": "150 menit",
+        "genre": "Drama",
+        "sutradara": "Tester",
+        "rating_usia": "17+",
+        "price": "Rp60.000"
+    }
+    response = client.put("/movies/mov99", json=updated_data)
     assert response.status_code == 200
-    data = response.json()
-    assert data["message"] == "Film dengan ID F001 berhasil dihapus"
+    assert response.json()["data"]["title"] == "Updated Movie"
 
-def test_lihat_setelah_hapus():
-    response = client.get("/movies/F001")
+
+def test_delete_movie():
+    response = client.delete("/movies/mov99")
+    assert response.status_code == 200
+    assert "berhasil dihapus" in response.json()["message"]
+
+
+def test_get_deleted_movie_should_fail():
+    response = client.get("/movies/mov99")
     assert response.status_code == 404
+    assert response.json()["detail"] == "Film tidak ditemukan"
+
+# ============================
+# TEST CRUD STUDIOS
+# ============================
+
+def test_get_all_studios():
+    response = client.get("/studios")
+    assert response.status_code == 200
     data = response.json()
-    assert data["detail"] == "Film tidak ditemukan"
+    assert "data" in data
+    assert isinstance(data["data"], list)
+
+
+def test_create_studio_success():
+    new_studio = {
+        "id_studio": "st99",
+        "id_movie": "mov1",
+        "title" : "Frozen"
+    }
+    response = client.post("/studios", json=new_studio)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"]["id_studio"] == "st99"
+    assert data["data"]["title"] == "Avengers: Endgame"
+
+
+def test_create_studio_duplicate_id():
+    new_studio = {
+        "id_studio": "st99",
+        "id_movie": "mov1",
+        "title" : "Frozen"
+    }
+    response = client.post("/studios", json=new_studio)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "ID studio sudah ada"
+
+
+def test_update_studio():
+    updated_studio = {
+        "id_studio": "st99",
+        "id_movie": "mov2",
+        "title" : "Frozen"
+    }
+    response = client.put("/studios/st99", json=updated_studio)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"]["title"] == "The Conjuring"
+
+
+def test_delete_studio():
+    response = client.delete("/studios/st99")
+    assert response.status_code == 200
+    assert "berhasil dihapus" in response.json()["message"]
