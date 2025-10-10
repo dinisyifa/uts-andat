@@ -35,28 +35,28 @@ def init_seats():
 
 # CREATE - Tambah jadwal baru
 @router.post("/schedules")
-def tambah_jadwal(movie_id: str, studio_id: str, date: str, time: str):
+def tambah_jadwal(schedule: Schedule):
     global schedule_counter
 
     # Cek movie
-    film = next((f for f in list_film if f["id"] == movie_id), None)
+    film = next((f for f in list_film if f["id"] == schedule.movie_id), None)
     if not film:
         raise HTTPException(status_code=404, detail="Film tidak ditemukan")
 
     # Cek studio
-    studio = next((s for s in list_studio if s["id_studio"] == studio_id), None)
+    studio = next((s for s in list_studio if s["id_studio"] == schedule.studio_id), None)
     if not studio:
         raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
 
     # Buat jadwal baru
     jadwal_baru = {
         "id_jadwal": f"sch{schedule_counter}",
-        "movie_id": movie_id,
+        "movie_id": schedule.movie_id,
         "movie_title": film["title"],
-        "studio_id": studio_id,
+        "studio_id": schedule.studio_id,
         "studio_name": studio["id_studio"],
-        "date": date,
-        "time": time,
+        "date": schedule.date,
+        "time": schedule.time,
         "seats": init_seats()
     }
 

@@ -3,8 +3,9 @@
 # Semua model data yang digunakan di sistem
 # ==========================================
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
+from datetime import datetime
 
 
 # ===============================
@@ -119,3 +120,24 @@ class TransactionDetail(BaseModel):
     seats: List[str]
     total_price: int
 
+
+# ===============================================
+# MODEL BARU UNTUK ALUR CHECKOUT DUA LANGKAH
+# ===============================================
+
+class PaymentMethodRequest(BaseModel):
+    """
+    Model input dari user untuk memilih metode pembayaran.
+    """
+    payment_method: str = Field(..., description="Metode pembayaran yang dipilih", example="QRIS")
+
+class PreTransactionResponse(BaseModel):
+    """
+    Model respons setelah user memilih metode pembayaran.
+    Berisi ID pesanan sementara yang akan digunakan untuk konfirmasi.
+    """
+    order_id: str
+    total_price: int
+    payment_method: str
+    expires_at: datetime # Menunjukkan kapan pesanan sementara ini akan batal
+    tickets: List[CartItemResponse]
