@@ -3,8 +3,9 @@
 # Semua model data yang digunakan di sistem
 # ==========================================
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
+from datetime import datetime
 
 
 # ===============================
@@ -37,18 +38,23 @@ class Studio(BaseModel):
 # ===============================
 # MODEL UNTUK JADWAL PENAYANGAN #dini
 # ===============================
+class Seat(BaseModel):
+    seat: str
+    available: bool
+
 class Schedule(BaseModel):
     """
     Representasi satu jadwal penayangan film di studio tertentu.
     """
-    id_jadwal: Optional[str] = None  # akan diisi otomatis (sch1, sch2, dst)
-    movie_id: str                   # relasi ke Movie
-    movie_title: Optional[str] = None
-    studio_id: str                  # relasi ke Studio
-    studio_name: Optional[str] = None
+    id_jadwal: Optional[str] = None
+    movie_id: str
+    studio_id: str
     date: str
     time: str
-    seats: Optional[List[List[Dict[str, Optional[bool]]]]] = None
+    movie_title: Optional[str] = None
+    studio_name: Optional[str] = None
+    seats: Optional[List[List[Seat]]] = None
+
 
 
 # ==================================
@@ -119,3 +125,24 @@ class TransactionDetail(BaseModel):
     seats: List[str]
     total_price: int
 
+
+# ===============================================
+# MODEL BARU UNTUK ALUR CHECKOUT DUA LANGKAH
+# ===============================================
+
+class PaymentMethodRequest(BaseModel):
+    """
+    Model input dari user untuk memilih metode pembayaran.
+    """
+    payment_method: str = Field(..., description="Metode pembayaran yang dipilih", example="QRIS")
+
+class PreTransactionResponse(BaseModel):
+    """
+    Model respons setelah user memilih metode pembayaran.
+    Berisi ID pesanan sementara yang akan digunakan untuk konfirmasi.
+    """
+    order_id: str
+    total_price: int
+    payment_method: str
+    expires_at: datetime # Menunjukkan kapan pesanan sementara ini akan batal
+    tickets: List[CartItemResponse]
