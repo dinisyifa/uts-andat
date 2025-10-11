@@ -12,28 +12,21 @@ from datetime import datetime
 # MODEL UNTUK ADMIN FILM #ressy
 # ===============================
 class Movie(BaseModel):
-    """
-    Representasi data satu film yang dikelola oleh Admin.
-    """
     id: str                 # contoh: "MOV001"
     title: str              # contoh: "Avengers: Endgame"
-    duration: str           # contoh: "3h 20m"
+    duration: str           # contoh: "120 menit"
     genre: str 
     sutradara: str
-    rating_usia: str  # opsional (bisa diisi nanti)
-    price: str              # contoh: 50000
+    rating_usia: str  
+    price: str              
 
 # ===============================
 # MODEL UNTUK STUDIO #ressy
 # ===============================
 class Studio(BaseModel):
-    """
-    Representasi data studio yang menayangkan film tertentu.
-    Terhubung dengan data Movie melalui id_movie.
-    """
-    id_studio: str          # contoh: "st1"
-    id_movie: str           # contoh: "mov1"
-    title: str
+    id: str          # contoh: "st1"
+    name: str           # contoh: "Studio 1"
+    capacity: int
 
 # ===============================
 # MODEL UNTUK JADWAL PENAYANGAN #dini
