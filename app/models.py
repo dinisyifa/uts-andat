@@ -4,7 +4,7 @@
 # ==========================================
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -12,13 +12,16 @@ from datetime import datetime
 # MODEL UNTUK ADMIN FILM #ressy
 # ===============================
 class Movie(BaseModel):
+    """
+    Representasi data satu film yang dikelola oleh Admin.
+    """
     id: str                 # contoh: "MOV001"
     title: str              # contoh: "Avengers: Endgame"
-    duration: str           # contoh: "120 menit"
+    duration: str           # contoh: "3h 20m"
     genre: str 
     sutradara: str
-    rating_usia: str  
-    price: str              
+    rating_usia: str  # opsional (bisa diisi nanti)
+    price: str              # contoh: 50000
 
 # ===============================
 # MODEL UNTUK STUDIO #ressy
@@ -46,8 +49,7 @@ class Schedule(BaseModel):
     time: str
     movie_title: Optional[str] = None
     studio_name: Optional[str] = None
-    seats: Optional[List[List[Seat]]] = None
-
+    seats: Optional[Any] = None
 
 
 # ==================================

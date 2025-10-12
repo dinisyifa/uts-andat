@@ -60,12 +60,14 @@ def hapus_film(movie_id: str):
 
 
 # Database Studio
-list_studio = [
-    {"id": "st1", "name": "Studio 1", "capacity": 48},
-    {"id": "st2", "name": "Studio 2", "capacity": 48},
-    {"id": "st3", "name": "Studio 3", "capacity": 48},
-    {"id": "st4", "name": "Studio 4", "capacity": 48},
+list_studio = list_studio = [
+    {"id_studio": "st1", "id_movie": "mov1", "name": "Studio 1", "capacity": 96},
+    {"id_studio": "st2", "id_movie": "mov2", "name": "Studio 2", "capacity": 96},
+    {"id_studio": "st3", "id_movie": "mov3", "name": "Studio 3", "capacity": 96},
+    {"id_studio": "st4", "id_movie": "mov4", "name": "Studio 4", "capacity": 96},
+    {"id_studio": "st5", "id_movie": "mov1", "name": "Studio 5", "capacity": 96}
 ]
+
 
 # CREATE - Tambah Studio
 @router.post("/studios")
