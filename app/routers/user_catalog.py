@@ -1,90 +1,109 @@
-# file: app/routers/user_catalog.py (Versi Perbaikan & Sinkronisasi)
+# app/routers/user_catalog.py
+from fastapi import APIRouter, HTTPException
+from typing import List, Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple, Dict, List, Any
-
-# --- Impor Sumber Data Utama ---
+# Import data dari admin
 from app.routers.admin_film import list_film
-from app.routers.admin_jadwal import raw_jadwal_template
+from app.routers.admin_jadwal import list_jadwal
 
 router = APIRouter()
 
-# ======================================================
-# LOGIKA UNTUK MENAHAN KURSI (SEAT HOLDING)
-# ======================================================
-HOLD_TTL_MINUTES = 30
-HOLDS: Dict[Tuple[str, str], datetime] = {}
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-def _find_schedule(schedule_id: str) -> Optional[Dict]:
-    return next((s for s in raw_jadwal_template if s.get("id") == schedule_id), None)
-
-def _sweep_expired_holds():
-    now = _utcnow()
-    expired_keys = [key for key, exp_at in HOLDS.items() if exp_at <= now]
-    
-    for sched_id, seat_label in expired_keys:
-        schedule = _find_schedule(sched_id)
-        if schedule and schedule.get("seats", {}).get(seat_label, {}).get("status") == "held":
-            schedule["seats"][seat_label]["status"] = "available"
-        HOLDS.pop((sched_id, seat_label), None)
-
-def _set_hold(schedule: Dict, labels: List[str]) -> Tuple[List[str], List[Tuple[str, str]]]:
-    ok, ng = [], []
-    expires_at = _utcnow() + timedelta(minutes=HOLD_TTL_MINUTES)
-    
-    for label in labels:
-        seat = schedule.get("seats", {}).get(label)
-        if not seat:
-            ng.append((label, "invalid_seat"))
-            continue
-        
-        if seat.get("status") == "available":
-            seat["status"] = "held"
-            HOLDS[(schedule["id"], label)] = expires_at
-            ok.append(label)
-        else:
-            ng.append((label, "not_available"))
-    return ok, ng
-
-# ======================================================
-# ENDPOINTS (USER - KATALOG)
-# ======================================================
-
-@router.get("/movies/now-playing")
-def get_now_playing_movies():
-    # ... (logika endpoint ini bisa tetap sama) ...
+# ===============================
+# GET /user/now_playing
+# ===============================
+@router.get("/now_playing")
+def get_now_playing():
+    """
+    Menampilkan daftar semua film yang sedang tayang.
+    (Mengambil dari list_film di admin_film.py)
+    """
     if not list_film:
-        raise HTTPException(status_code=404, detail="Saat ini belum ada film yang terdaftar.")
-    return {"data": list_film}
+        raise HTTPException(status_code=404, detail="Tidak ada film yang sedang tayang.")
 
+    data_ringkas = [
+        {
+            "id": film["id"],
+            "title": film["title"],
+            "genre": film.get("genre", "-"),
+            "duration": film.get("duration", "-"),
+            "rating_usia": film.get("rating_usia", "-"),
+            "price": film.get("price", 0)
+        }
+        for film in list_film
+    ]
+    return {
+        "message": "Daftar film yang sedang tayang berhasil diambil",
+        "count": len(data_ringkas),
+        "data": data_ringkas
+    }
+
+
+# ===============================
+# GET /user/movies/{movie_id}/details
+# ===============================
 @router.get("/movies/{movie_id}/details")
-def get_movie_details_and_schedules(movie_id: str):
-    # ... (logika endpoint ini bisa tetap sama) ...
-    movie = next((f for f in list_film if f.get("id") == movie_id), None)
+def get_movie_details(movie_id: str):
+    """
+    Menampilkan detail film dan semua jadwal tayangnya.
+    """
+    # cari film
+    movie = next((f for f in list_film if f["id"] == movie_id or f["id"] == f"mov{movie_id}"), None)
     if not movie:
-        raise HTTPException(status_code=404, detail="Film tidak ditemukan.")
-    movie_schedules = [s for s in raw_jadwal_template if s.get("movie_id") == movie_id]
-    return {"movie_details": movie, "schedules": movie_schedules}
+        raise HTTPException(status_code=404, detail=f"Film dengan ID {movie_id} tidak ditemukan.")
 
+    # cari jadwal berdasarkan movie_id (cocokkan dengan atau tanpa prefix 'mov')
+    movie_schedules = [
+    j for j in list_jadwal
+    if j["movie_id"].replace("mov", "") == movie["id"].replace("mov", "")
+    ]
+
+    return {
+        "id": movie["id"],
+        "title": movie["title"],
+        "sutradara": movie.get("sutradara", "-"),
+        "rating_usia": movie.get("rating_usia", "-"),
+        "price": movie.get("price", "-"),
+        "schedules": [
+            {
+                "id_jadwal": j["id_jadwal"],
+                "studio": j["studio_name"],
+                "tanggal": j["date"],
+                "waktu": j["time"]
+            } for j in movie_schedules
+        ]
+    }
+
+
+# ===============================
+# GET /user/schedules/{schedule_id}/seats
+# ===============================
 @router.get("/schedules/{schedule_id}/seats")
-def get_seat_map(schedule_id: str):
-    _sweep_expired_holds()
-    schedule = _find_schedule(schedule_id)
-    if not schedule:
-        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan.")
-    return {"schedule_info": schedule, "seats": schedule.get("seats")}
+def get_seat_layout(schedule_id: str):
+    """
+    Menampilkan denah dan status ketersediaan kursi untuk jadwal tertentu.
+    """
+    jadwal = next((j for j in list_jadwal if j["id_jadwal"] == schedule_id), None)
+    if not jadwal:
+        raise HTTPException(status_code=404, detail=f"Jadwal dengan ID {schedule_id} tidak ditemukan.")
 
-@router.post("/schedules/{schedule_id}/hold")
-def hold_seats(schedule_id: str, seats_to_hold: List[str]):
-    _sweep_expired_holds()
-    schedule = _find_schedule(schedule_id)
-    if not schedule:
-        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan.")
-    ok, ng = _set_hold(schedule, seats_to_hold)
-    if not ok:
-        raise HTTPException(status_code=400, detail={"message": "Gagal menahan kursi", "failed_seats": ng})
-    return {"held_seats": ok, "failed_seats": ng, "expires_at": (_utcnow() + timedelta(minutes=HOLD_TTL_MINUTES)).isoformat()}
+    seats = jadwal.get("seats", [])
+    if not seats:
+        raise HTTPException(status_code=404, detail="Data kursi tidak tersedia untuk jadwal ini.")
+
+    # Buat list kursi yang bisa dipilih user
+    seat_list = []
+    for row in seats:
+        for seat in row:
+            if seat["available"] is not None:
+                seat_list.append({
+                    "seat_number": seat["seat"],
+                    "status": "available" if seat["available"] else "booked"
+                })
+
+    return {
+        "message": "Denah kursi berhasil diambil",
+        "schedule_id": jadwal["id_jadwal"],
+        "studio": jadwal["studio_name"],
+        "available_seats": [s for s in seat_list if s["status"] == "available"],
+        "all_seats": seat_list
+    }

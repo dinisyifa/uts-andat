@@ -34,7 +34,8 @@ def find_film(movie_id: str):
 
 
 def find_studio(studio_id: str):
-    return next((s for s in list_studio if str(s.get("id_studio")) == str(studio_id)), None)
+    return next((s for s in list_studio if str(s.get("id")) == str(studio_id)), None)
+
 
 
 # ================
