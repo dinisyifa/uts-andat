@@ -8,6 +8,7 @@ from app.models import CartAddItem, CartItemResponse, TransactionDetail, Payment
 
 from app.routers.admin_film import list_film
 from app.routers.admin_jadwal import raw_jadwal_template
+#from app.routers.user_catalog import SEATS_BY_SCHEDULE
 
 # variabel global
 cart = []
@@ -22,54 +23,38 @@ router = APIRouter()
 
 @router.post("/cart/add")
 def add_ticket_to_cart(item: CartAddItem):
-    """
-    Menambahkan tiket ke keranjang berdasarkan Judul Film, Jam Tayang, dan Nomor Kursi.
-    """
-    # ======================================================================
-    # Langkah 1: Cari movie_id berdasarkan movie_title dari input user.
-    movie_found = next((f for f in list_film if f.get("title") == item.movie_title), None)
-    if not movie_found:
-        raise HTTPException(status_code=404, detail=f"Film dengan judul '{item.movie_title}' tidak ditemukan.")
-    
-    movie_id_found = movie_found.get("id")
-
-    # Langkah 2: Cari jadwal yang cocok berdasarkan movie_id DAN show_time.
-    matching_schedules = [
-        s for s in raw_jadwal_template 
-        if s.get("movie_id") == movie_id_found and s.get("time") == item.show_time
-    ]
-
-    # cari list jadwal berdasarkan item.schedule_id
+    # Langkah 1: Cari jadwal berdasarkan schedule_id dari input user. Ini adalah satu-satunya cara yang benar.
     schedule_found = next((s for s in raw_jadwal_template if s.get("id") == item.schedule_id), None)
     if not schedule_found:
         raise HTTPException(status_code=404, detail=f"Jadwal dengan ID '{item.schedule_id}' tidak ditemukan.")
 
-    # Cek ketersediaan kursi
+    # Langkah 2: Cek ketersediaan kursi dengan benar
     seat = schedule_found.get("seats", {}).get(item.seat_number)
     if not seat:
         raise HTTPException(status_code=404, detail=f"Kursi '{item.seat_number}' tidak ditemukan di jadwal ini.")
-    if not seat.get("available"):
+    # Asumsi: status kursi adalah 'available', 'held', atau 'booked'
+    if seat.get("status") != "available":
         raise HTTPException(status_code=400, detail=f"Kursi '{item.seat_number}' sudah tidak tersedia.")
 
-    # Cek duplikat di keranjang
+    # Langkah 3: Cek duplikat di keranjang dengan benar
     for cart_item in cart:
         if cart_item["schedule_id"] == item.schedule_id and cart_item["seat_number"] == item.seat_number:
             raise HTTPException(status_code=400, detail=f"Tiket untuk kursi '{item.seat_number}' di jadwal ini sudah ada di keranjang.")
 
-    # Cari detail film
+    # Langkah 4: Cari detail film (logika ini sudah benar)
     movie_found = next((f for f in list_film if f.get("id") == schedule_found.get("movie_id")), None)
     if not movie_found:
         raise HTTPException(status_code=404, detail="Film untuk jadwal ini tidak ditemukan.")
 
-    # Buat item keranjang baru dengan aman
+    # Langkah 5: Buat item keranjang baru dengan benar
     new_cart_item = {
         "item_id": f"ITEM-{uuid.uuid4().hex[:6].upper()}",
         "schedule_id": schedule_found.get("id"),
         "movie_id": movie_found.get("id"),
         "movie_title": movie_found.get("title"),
         "schedule": f"{schedule_found.get('date', '')} {schedule_found.get('time', '')}",
-        "studio": schedule_found.get("studio", "N/A"),
-        "seat_number": item.seat_number,
+        "studio": schedule_found.get("studio_name", "N/A"),
+        "seat_number": item.seat_number, # <-- Gunakan item.seat_number
         "price": movie_found.get("price")
     }
     cart.append(new_cart_item)
