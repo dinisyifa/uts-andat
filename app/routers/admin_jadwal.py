@@ -1,83 +1,194 @@
+# app/routers/admin_jadwal.py
 from fastapi import APIRouter, HTTPException
-from app.routers.admin_film import list_film, list_studio  # ambil data dari admin_film
-from app.models import Movie, Studio, Schedule
+from fastapi.responses import HTMLResponse
+from typing import List, Dict, Any
+from app.routers.admin_film import list_film, list_studio
 
-router = APIRouter()
-
-# Simpan jadwal di memori
-list_jadwal = []
-schedule_counter = 1  # untuk ID unik jadwal
+router = APIRouter(prefix="/admin/jadwal", tags=["Admin - Jadwal"])
 
 
-# Fungsi bantu: inisialisasi layout kursi 8x16 (ada lorong tengah)
-def init_seats():
+# helper — buat layout kursi 8x(6+6) dengan lorong tengah
+def init_seats() -> List[List[Dict[str, Any]]]:
     rows = 8
-    cols_per_side = 8
-    aisle_gap = 1
-    seat_layout = []
-
+    cols_per_side = 6
+    seat_layout: List[List[Dict[str, Any]]] = []
     for r in range(rows):
-        row_letter = chr(65 + r)  # A, B, C, ...
-        row_seats = []
-
+        row_letter = chr(65 + r)  # A..H
+        row_seats: List[Dict[str, Any]] = []
+        # kiri
         for c in range(1, cols_per_side + 1):
             row_seats.append({"seat": f"{row_letter}{c}", "available": True})
-
-        row_seats.append({"seat": " ", "available": None})  # lorong tengah
-
+        # lorong
+        row_seats.append({"seat": " ", "available": None})
+        # kanan
         for c in range(cols_per_side + 1, cols_per_side * 2 + 1):
             row_seats.append({"seat": f"{row_letter}{c}", "available": True})
-
         seat_layout.append(row_seats)
-
     return seat_layout
 
 
-# CREATE - Tambah jadwal baru
-@router.post("/schedules")
-def tambah_jadwal(movie_id: str, studio_id: str, date: str, time: str):
-    global schedule_counter
+# helper cari film / studio pada admin_film lists (tidak membuat entitas baru)
+def find_film(movie_id: str):
+    return next((f for f in list_film if str(f.get("id")) == str(movie_id)), None)
 
-    # Cek movie
-    film = next((f for f in list_film if f["id"] == movie_id), None)
+
+def find_studio(studio_id: str):
+    return next((s for s in list_studio if str(s.get("id_studio")) == str(studio_id)), None)
+
+
+# ================
+# list_jadwal (DATA SEMENTARA) - sesuai persis dengan jadwal yang kamu kirim
+# NOTE: movie_id / studio_id akan diambil dari admin_film. Jika film/studio tidak ada,
+#      jadwal tersebut akan di-skip dan tidak dimasukkan.
+# ================
+
+raw_jadwal_template = [
+    # Avengers (mov1)
+    {"id": "sch1",  "movie_id": "mov1", "studio_id": "st1", "date": "2024-06-01", "time": "12.15 - 15.05"},
+    {"id": "sch2",  "movie_id": "mov1", "studio_id": "st2", "date": "2024-06-01", "time": "14.45 - 17.10"},
+    {"id": "sch3",  "movie_id": "mov1", "studio_id": "st3", "date": "2024-06-01", "time": "14.50 - 17.15"},
+    {"id": "sch4",  "movie_id": "mov1", "studio_id": "st4", "date": "2024-06-01", "time": "13.20 - 16.40"},
+    {"id": "sch5",  "movie_id": "mov1", "studio_id": "st5", "date": "2024-06-01", "time": "19.40 - 23.00"},
+
+    # The Conjuring (mov2)
+    {"id": "sch6",  "movie_id": "mov2", "studio_id": "st2", "date": "2024-06-01", "time": "12.15 - 14.15"},
+    {"id": "sch7",  "movie_id": "mov2", "studio_id": "st3", "date": "2024-06-01", "time": "17.30 - 19.30"},
+    {"id": "sch8",  "movie_id": "mov2", "studio_id": "st4", "date": "2024-06-01", "time": "17.00 - 19.00"},
+    {"id": "sch9",  "movie_id": "mov2", "studio_id": "st5", "date": "2024-06-01", "time": "10.00 - 12.10"},
+    {"id": "sch10", "movie_id": "mov2", "studio_id": "st1", "date": "2024-06-01", "time": "12.10 - 14.10"},
+
+    # Frozen (mov3)
+    {"id": "sch11", "movie_id": "mov3", "studio_id": "st3", "date": "2024-06-01", "time": "10.00 - 12.10"},
+    {"id": "sch12", "movie_id": "mov3", "studio_id": "st4", "date": "2024-06-01", "time": "19.20 - 20.30"},
+    {"id": "sch13", "movie_id": "mov3", "studio_id": "st5", "date": "2024-06-01", "time": "16.55 - 19.15"},
+    {"id": "sch14", "movie_id": "mov3", "studio_id": "st1", "date": "2024-06-01", "time": "17.00 - 19.10"},
+    {"id": "sch15", "movie_id": "mov3", "studio_id": "st2", "date": "2024-06-01", "time": "17.40 - 20.00"},
+
+    # Komang (mov4)
+    {"id": "sch16", "movie_id": "mov4", "studio_id": "st4", "date": "2024-06-01", "time": "11.00 - 13.10"},
+    {"id": "sch17", "movie_id": "mov4", "studio_id": "st5", "date": "2024-06-01", "time": "14.45 - 16.55"},
+    {"id": "sch18", "movie_id": "mov4", "studio_id": "st1", "date": "2024-06-01", "time": "10.00 - 12.10"},
+    {"id": "sch19", "movie_id": "mov4", "studio_id": "st2", "date": "2024-06-01", "time": "20.30 - 22.40"},
+    {"id": "sch20", "movie_id": "mov4", "studio_id": "st3", "date": "2024-06-01", "time": "20.00 - 22.10"},
+]
+
+# bangun list_jadwal final (hanya memasukkan jadwal yang referensi film & studio ada)
+list_jadwal: List[Dict[str, Any]] = []
+for r in raw_jadwal_template:
+    film = find_film(r["movie_id"])
+    studio = find_studio(r["studio_id"])
+    if not film or not studio:
+        # skip jika referensi tidak ada — user tidak mau duplikasi film/studio
+        continue
+    jadwal = {
+        "id_jadwal": r["id"],
+        "movie_id": r["movie_id"],
+        "movie_title": film.get("title"),
+        "studio_id": r["studio_id"],
+        "studio_name": studio.get("name") or studio.get("title") or r["studio_id"],
+        "date": r["date"],
+        "time": r["time"],
+        "seats": init_seats()
+    }
+    list_jadwal.append(jadwal)
+
+# schedule_counter untuk penambahan jadwal baru
+schedule_counter = len(list_jadwal) + 1
+
+
+# ================
+# Endpoints
+# ================
+@router.get("/schedules")
+def lihat_semua_jadwal():
+    data_ringkas = [
+        {
+            "id_jadwal": j["id_jadwal"],
+            "movie_title": j["movie_title"],
+            "studio_name": j["studio_name"],
+            "date": j["date"],
+            "time": j["time"]
+        }
+        for j in list_jadwal:
+            j["seats"] = None
+    ]
+    return {"message": "Daftar jadwal berhasil diambil", "data": data_ringkas}
+
+
+@router.get("/movies/{movie_id}")
+def lihat_jadwal_film(movie_id: str):
+    jadwal_film = [j for j in list_jadwal if str(j.get("movie_id")) == str(movie_id)]
+    if not jadwal_film:
+        raise HTTPException(status_code=404, detail="Belum ada jadwal untuk film ini")
+    return {"count": len(jadwal_film), "data": jadwal_film}
+
+
+@router.post("/schedules")
+def tambah_jadwal(payload: Dict[str, Any]):
+    """
+    Payload minimal:
+    {
+      "movie_id": "mov1",
+      "studio_id": "st1",
+      "date": "2025-10-15",
+      "time": "12.15 - 15.05"
+    }
+    """
+    movie_id = str(payload.get("movie_id", "")).strip()
+    studio_id = str(payload.get("studio_id", "")).strip()
+    date_val = payload.get("date", "")
+    time_val = payload.get("time", "")
+
+    if not movie_id or not studio_id:
+        raise HTTPException(status_code=400, detail="movie_id dan studio_id wajib diisi")
+
+    film = find_film(movie_id)
+    studio = find_studio(studio_id)
     if not film:
         raise HTTPException(status_code=404, detail="Film tidak ditemukan")
-
-    # Cek studio
-    studio = next((s for s in list_studio if s["id_studio"] == studio_id), None)
     if not studio:
         raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
 
-    # Buat jadwal baru
-    jadwal_baru = {
-        "id_jadwal": f"sch{schedule_counter}",
+    new_id = f"sch{len(list_jadwal) + 1}"
+    new_schedule = {
+        "id_jadwal": new_id,
         "movie_id": movie_id,
-        "movie_title": film["title"],
+        "movie_title": film.get("title"),
         "studio_id": studio_id,
-        "studio_name": studio["id_studio"],
-        "date": date,
-        "time": time,
+        "studio_name": studio.get("name") or studio.get("title") or studio_id,
+        "date": date_val,
+        "time": time_val,
         "seats": init_seats()
     }
-
-    list_jadwal.append(jadwal_baru)
-    schedule_counter += 1
-
-    return {"message": "Jadwal berhasil dibuat", "data": jadwal_baru}
+    list_jadwal.append(new_schedule)
+    return {"message": "Jadwal berhasil dibuat", "data": new_schedule}
 
 
-# READ - Lihat semua jadwal
-@router.get("/schedules")
-def lihat_semua_jadwal():
-    if not list_jadwal:
-        raise HTTPException(status_code=404, detail="Belum ada jadwal yang terdaftar")
-    return {"message": "Daftar semua jadwal berhasil diambil", "data": list_jadwal}
+@router.delete("/{schedule_id}")
+def hapus_jadwal(schedule_id: str):
+    for j in list_jadwal:
+        if j.get("id_jadwal") == schedule_id:
+            list_jadwal.remove(j)
+            return {"message": f"Jadwal {schedule_id} berhasil dihapus"}
+    raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
 
 
-# READ - Lihat jadwal berdasarkan film
-@router.get("/movies/{movie_id}/schedules")
-def lihat_jadwal_film(movie_id: str):
-    jadwal_film = [j for j in list_jadwal if j["movie_id"] == movie_id]
-    if not jadwal_film:
-        raise HTTPException(status_code=404, detail="Belum ada jadwal untuk film ini")
-    return {"message": f"Jadwal untuk film {movie_id} ditemukan", "data": jadwal_film}
+@router.get("/{schedule_id}/seat-map", response_class=HTMLResponse)
+def seat_map(schedule_id: str):
+    jadwal = next((j for j in list_jadwal if j.get("id_jadwal") == schedule_id), None)
+    if not jadwal:
+        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
+
+    html = "<h3>Peta Kursi (Layar di bawah)</h3><table border='1' cellpadding='6' style='text-align:center;'>"
+    for row in jadwal["seats"]:
+        html += "<tr>"
+        for seat in row:
+            if seat["available"] is None:
+                html += "<td style='background:white; width:20px;'></td>"
+            elif seat["available"]:
+                html += f"<td style='background:lightgreen; width:30px'>{seat['seat']}</td>"
+            else:
+                html += f"<td style='background:lightgray; width:30px'>{seat['seat']}</td>"
+        html += "</tr>"
+    html += "</table><p style='margin-top:10px;'>===== LAYAR BIOSKOP =====</p>"
+    return html
