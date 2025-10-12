@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.models import CartAddItem, CartItemResponse, TransactionDetail, PaymentMethodRequest, PreTransactionResponse
 
 from app.routers.admin_film import list_film
-from app.routers.admin_jadwal import list_jadwal
+from app.routers.admin_jadwal import raw_jadwal_template
 
 # variabel global
 cart = []
@@ -22,8 +22,25 @@ router = APIRouter()
 
 @router.post("/cart/add")
 def add_ticket_to_cart(item: CartAddItem):
-    # 1. Perbaikan: Cari di 'list_jadwal' bukan 'scheduler'
-    schedule_found = next((s for s in list_jadwal if s.get("id") == item.schedule_id), None)
+    """
+    Menambahkan tiket ke keranjang berdasarkan Judul Film, Jam Tayang, dan Nomor Kursi.
+    """
+    # ======================================================================
+    # Langkah 1: Cari movie_id berdasarkan movie_title dari input user.
+    movie_found = next((f for f in list_film if f.get("title") == item.movie_title), None)
+    if not movie_found:
+        raise HTTPException(status_code=404, detail=f"Film dengan judul '{item.movie_title}' tidak ditemukan.")
+    
+    movie_id_found = movie_found.get("id")
+
+    # Langkah 2: Cari jadwal yang cocok berdasarkan movie_id DAN show_time.
+    matching_schedules = [
+        s for s in raw_jadwal_template 
+        if s.get("movie_id") == movie_id_found and s.get("time") == item.show_time
+    ]
+
+    # cari list jadwal berdasarkan item.schedule_id
+    schedule_found = next((s for s in raw_jadwal_template if s.get("id") == item.schedule_id), None)
     if not schedule_found:
         raise HTTPException(status_code=404, detail=f"Jadwal dengan ID '{item.schedule_id}' tidak ditemukan.")
 
@@ -88,7 +105,7 @@ def select_payment_method(payload: PaymentMethodRequest):
 
     # Validasi ulang semua kursi sebelum membuat pesanan sementara
     for item in cart:
-        schedule = next((s for s in list_jadwal if s.get("id") == item.get("schedule_id")), None)
+        schedule = next((s for s in raw_jadwal_template if s.get("id") == item.get("schedule_id")), None)
         if not schedule or not schedule.get("seats", {}).get(item.get("seat_number"), {}).get("available"):
             raise HTTPException(
                 status_code=409,
@@ -148,7 +165,7 @@ def confirm_checkout(order_id: str):
     # Jika valid, finalisasi transaksi
     # 1. Ubah status kursi menjadi "booked" secara permanen
     for item in order["tickets_full_data"]:
-        schedule = next((s for s in list_jadwal if s.get("id") == item.get("schedule_id")), None)
+        schedule = next((s for s in raw_jadwal_template if s.get("id") == item.get("schedule_id")), None)
         if schedule:
             schedule["seats"][item["seat_number"]]["available"] = False
     

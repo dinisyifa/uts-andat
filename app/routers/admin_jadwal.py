@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from typing import List, Dict, Any
 from app.routers.admin_film import list_film, list_studio
+from app.models import Schedule
 
 router = APIRouter(prefix="/admin/jadwal", tags=["Admin - Jadwal"])
 
@@ -112,7 +113,7 @@ def lihat_semua_jadwal():
         }
         for j in list_jadwal
     ]
-    return {"message": "Daftar jadwal berhasil diambil", "data": data_ringkas}
+    return {"message": "Daftar jadwal berhasil diambil", "data": raw_jadwal_template}
 
 @router.get("/movies/{movie_id}")
 def lihat_jadwal_film(movie_id: str):
@@ -123,7 +124,7 @@ def lihat_jadwal_film(movie_id: str):
 
 
 @router.post("/schedules")
-def tambah_jadwal(payload: Dict[str, Any]):
+def tambah_jadwal(payload: Schedule):
     """
     Payload minimal:
     {

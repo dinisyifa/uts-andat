@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Dict, List, Any
 
 # ambil data Admin (Ressy & Dini)
 from app.routers.admin_film import list_film      # list[dict]
-from app.routers.admin_jadwal import list_jadwal  # list[dict]
+from app.routers.admin_jadwal import raw_jadwal_template  # list[dict]
 from app.models import Movie, Studio, Schedule, CatalogDetail, SeatDetail
 
 # ---------------------------
@@ -239,7 +239,7 @@ def user_movies():
     katalog = []
     for film in list_film:
         showtimes = []
-        for j in list_jadwal:
+        for j in raw_jadwal_template:
             if str(j.get("movie_id")) == str(film.get("id")):
                 sid = _sid(j.get("id_jadwal"))
                 _ensure_matrix(sid)  # auto-init
@@ -266,7 +266,7 @@ def movie_details(movie_id: str):
         raise HTTPException(status_code=404, detail="Film tidak ditemukan")
 
     showtimes = []
-    for j in list_jadwal:
+    for j in raw_jadwal_template:
         if str(j.get("movie_id")) == str(movie_id):
             sid = _sid(j.get("id_jadwal"))
             _ensure_matrix(sid)  # auto-init

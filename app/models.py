@@ -85,14 +85,11 @@ class SeatDetail(BaseModel):
 class CartAddItem(BaseModel):
     """
     Model untuk menambah item tiket ke keranjang.
+    User cukup memasukkan informasi yang mudah diingat.
     """
-    schedule_id: str      # ID jadwal (relasi ke Schedule)
-    seat_number: str      # nomor kursi yang dipilih (misal: "A1")
-    # quantity: int         # jumlah tiket (default 1, karena tiap kursi unik)
-    # price: Optional[int] = None  # akan diisi otomatis dari data film
-    # total_price: Optional[int] = None  # akan dihitung otomatis
-    # movie_id: Optional[str] = None  # akan diisi otomatis dari data jadwal
-
+    movie_title: str # = Field(..., description="Judul film yang ingin ditonton.", example="Avengers: Endgame")
+    schedule_id : str   # = Field(..., description="Jam penayangan yang dipilih (format HH:MM).", example="19:00")
+    seat_number: str # = Field(..., description="Nomor kursi yang dipilih.", example="A5")
 # ==================================
 class CartItemResponse(BaseModel):
     """
