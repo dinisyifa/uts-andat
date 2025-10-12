@@ -99,6 +99,7 @@ schedule_counter = len(list_jadwal) + 1
 # ================
 # Endpoints
 # ================
+
 @router.get("/schedules")
 def lihat_semua_jadwal():
     data_ringkas = [
@@ -109,11 +110,9 @@ def lihat_semua_jadwal():
             "date": j["date"],
             "time": j["time"]
         }
-        for j in list_jadwal:
-            j["seats"] = None
+        for j in list_jadwal
     ]
     return {"message": "Daftar jadwal berhasil diambil", "data": data_ringkas}
-
 
 @router.get("/movies/{movie_id}")
 def lihat_jadwal_film(movie_id: str):
