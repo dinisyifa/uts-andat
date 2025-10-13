@@ -61,10 +61,10 @@ def hapus_film(movie_id: str):
 
 # Database Studio
 list_studio = [
-    {"id": "st1", "name": "Studio 1", "capacity":96},
-    {"id": "st2", "name": "Studio 2", "capacity":96},
-    {"id": "st3", "name": "Studio 3", "capacity":96},
-    {"id": "st4", "name": "Studio 4", "capacity":96},
+    {"id": "st1", "name": "Studio 1", "capacity": 96},
+    {"id": "st2", "name": "Studio 2", "capacity": 96},
+    {"id": "st3", "name": "Studio 3", "capacity": 96},
+    {"id": "st4", "name": "Studio 4", "capacity": 96},
 ]
 
 
