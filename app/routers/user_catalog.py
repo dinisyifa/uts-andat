@@ -8,11 +8,11 @@ from app.routers.admin_jadwal import list_jadwal
 
 router = APIRouter()
 
-# ===============================
-# GET /user/now_playing
-# ===============================
+# =============================================== API KATALOG ================================================
+
+# READ - Lihat semua film yang sedang tayang
 @router.get("/now_playing")
-def get_now_playing():
+def now_playing():
     """
     Menampilkan daftar semua film yang sedang tayang.
     (Mengambil dari list_film di admin_film.py)
@@ -38,11 +38,9 @@ def get_now_playing():
     }
 
 
-# ===============================
-# GET /user/movies/{movie_id}/details
-# ===============================
-@router.get("/movies/{movie_id}/details")
-def get_movie_details(movie_id: str):
+# READ - Lihat detail film dan jadwalnya
+@router.get("/now_playing/{movie_id}/details")
+def detail_film(movie_id: str):
     """
     Menampilkan detail film dan semua jadwal tayangnya.
     """
@@ -73,37 +71,49 @@ def get_movie_details(movie_id: str):
         ]
     }
 
+# layout kursi 
+ROWS = 8
+COLS = 12
+AISLE_AFTER_COL = 6
+ROW_LETTERS = [chr(ord("A") + i) for i in range(ROWS)]
 
-# ===============================
-# GET /user/schedules/{schedule_id}/seats
-# ===============================
+def _empty_matrix() -> List[List[str]]:
+    return [["." for _ in range(COLS)] for _ in range(ROWS)]
+
+# ---------------------------
+# Seats State (in-memory)
+# ---------------------------
+def _sid(x: Any) -> str:
+    """paksa id jadi string (aman kalau sumbernya int/str)."""
+    return str(x)
+
+SEATS_BY_SCHEDULE: Dict[str, List[List[str]]] = {}
+
+def _ensure_matrix(schedule_id: Any) -> List[List[str]]:
+    sid = _sid(schedule_id)
+    if sid not in SEATS_BY_SCHEDULE:
+        SEATS_BY_SCHEDULE[sid] = _empty_matrix()
+    return SEATS_BY_SCHEDULE[sid]
+
+# =============================================== API KURSI ================================================
+
+# READ - Lihat denah kursi untuk jadwal tertentu
 @router.get("/schedules/{schedule_id}/seats")
-def get_seat_layout(schedule_id: str):
-    """
-    Menampilkan denah dan status ketersediaan kursi untuk jadwal tertentu.
-    """
-    jadwal = next((j for j in list_jadwal if j["id_jadwal"] == schedule_id), None)
-    if not jadwal:
-        raise HTTPException(status_code=404, detail=f"Jadwal dengan ID {schedule_id} tidak ditemukan.")
+def denah_kursi(schedule_id: str):
+    _ensure_matrix(schedule_id)
+    mat = SEATS_BY_SCHEDULE.get(_sid(schedule_id))
+    if mat is None:
+        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
 
-    seats = jadwal.get("seats", [])
-    if not seats:
-        raise HTTPException(status_code=404, detail="Data kursi tidak tersedia untuk jadwal ini.")
-
-    # Buat list kursi yang bisa dipilih user
-    seat_list = []
-    for row in seats:
-        for seat in row:
-            if seat["available"] is not None:
-                seat_list.append({
-                    "seat_number": seat["seat"],
-                    "status": "available" if seat["available"] else "booked"
-                })
+    left  = " ".join(str(i) for i in range(1, AISLE_AFTER_COL + 1))
+    right = " ".join(str(i) for i in range(AISLE_AFTER_COL + 1, COLS + 1))
+    lines = ["          SCREEN", f"   {left}   {right}"]
+    for r in range(ROWS):
+        L = " ".join(mat[r][:AISLE_AFTER_COL])
+        R = " ".join(mat[r][AISLE_AFTER_COL:])
+        lines.append(f"{ROW_LETTERS[r]}  {L}   {R}")
 
     return {
-        "message": "Denah kursi berhasil diambil",
-        "schedule_id": jadwal["id_jadwal"],
-        "studio": jadwal["studio_name"],
-        "available_seats": [s for s in seat_list if s["status"] == "available"],
-        "all_seats": seat_list
+        "schedule_id": _sid(schedule_id),
+        "display": lines,
     }
