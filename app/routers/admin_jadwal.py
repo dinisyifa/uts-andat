@@ -129,10 +129,10 @@ def tambah_jadwal(payload: Schedule):
       "time": "12.15 - 15.05"
     }
     """
-    movie_id = str(payload.get("movie_id", "")).strip()
-    studio_id = str(payload.get("studio_id", "")).strip()
-    date_val = payload.get("date", "")
-    time_val = payload.get("time", "")
+    movie_id = str(payload.movie_id or "").strip()
+    studio_id = str(payload.studio_id or "").strip()
+    date_val = payload.date or ""
+    time_val = payload.time or ""
 
     if not movie_id or not studio_id:
         raise HTTPException(status_code=400, detail="movie_id dan studio_id wajib diisi")
@@ -175,7 +175,7 @@ def update_jadwal(id_jadwal: str, updated_data: Schedule):
         raise HTTPException(status_code=404, detail="Film tidak ditemukan")
 
     # Validasi: cek apakah studio_id valid
-    studio = next((s for s in list_studio if s["studio_id"] == updated_data.studio_id), None)
+    studio = next((s for s in list_studio if s["id"] == updated_data.studio_id), None)
     if not studio:
         raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
 

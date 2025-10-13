@@ -125,7 +125,9 @@ def metode_pembayaran(payload: PaymentMethodRequest):
             "schedule": item["schedule"],
             "studio": item["studio"],
             "seat_number": item["seat_number"],
-            "price": item["price"]
+            "price": item["price"],
+            "schedule_id": item["schedule_id"],
+            "movie_id": item["movie_id"],   
         }
         for item in cart_items
     ]
@@ -179,19 +181,11 @@ def konfirmasi_pembayaran(order_id: str):
 
     # Buat data transaksi final
     final_transaction = {
-        "booking_code": booking_code,
-        "total_price": order["total_price"],
-        "tickets": [
-            {
-                "item_id": item["item_id"],
-                "movie_title": item["movie_title"],
-                "schedule": item["schedule"],
-                "studio": item["studio"],
-                "seat_number": item["seat_number"],
-                "price": item["price"]
-            }
-            for item in order["tickets_full_data"]
-        ]
+        "transaction_id": booking_code,  #
+        "user_id": "USER001",
+        "schedule_id": order["tickets_full_data"][0]["schedule_id"] if order["tickets_full_data"] else "",
+        "seats": [item["seat_number"] for item in order["tickets_full_data"]],
+        "total_price": order["total_price"]
     }
 
     # Simpan ke riwayat transaksi dan hapus dari pending
