@@ -107,14 +107,6 @@ def lihat_semua_jadwal():
         for j in list_jadwal
     ]
     return {"message": "Daftar jadwal berhasil diambil!", "data": data_ringkas}
-    
-# READ - Lihat jadwal berdasarkan movie_id
-@router.get("/movies/{movie_id}")
-def lihat_jadwal_film(movie_id: str):
-    jadwal_film = [j for j in list_jadwal if str(j.get("movie_id")) == str(movie_id)]
-    if not jadwal_film:
-        raise HTTPException(status_code=404, detail="Belum ada jadwal untuk film ini")
-    return {"count": len(jadwal_film), "data": jadwal_film}
 
 
 # CREATE - Tambah jadwal baru
@@ -159,7 +151,7 @@ def tambah_jadwal(payload: Schedule):
     return {"message": "Jadwal berhasil dibuat", "data": new_schedule}
 
 # UPDATE - Perbarui jadwal
-@router.put("/schedules/{id_jadwal}")
+@router.put("/schedules/{schedule_id}")
 def update_jadwal(id_jadwal: str, updated_data: Schedule):
     """
     Memperbarui data jadwal berdasarkan id_jadwal.
@@ -193,7 +185,7 @@ def update_jadwal(id_jadwal: str, updated_data: Schedule):
     }
 
 # DELETE - Hapus jadwal
-@router.delete("/{schedule_id}")
+@router.delete("/schedules/{schedule_id}")
 def hapus_jadwal(schedule_id: str):
     for j in list_jadwal:
         if j.get("id_jadwal") == schedule_id:
