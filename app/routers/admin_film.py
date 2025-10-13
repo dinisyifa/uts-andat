@@ -3,7 +3,7 @@ from app.models import Movie, Studio
 
 router = APIRouter()
 
-# Simulasi "database" sementara dengan list di memori
+# Database film
 list_film = [{"id": "mov1", "title": "Avengers: Endgame", "duration": "200 menit", "genre": "Action, Fantasy", "sutradara": "Anthony Russo, Joe Russo", "rating_usia": "PG-13", "price": "Rp40.000"},
 {"id": "mov2", "title": "The Conjuring", "duration": "120 menit", "genre": "Horror, Mystery", "sutradara": "James Wan", "rating_usia": "17+", "price": "Rp40.000"},
 {"id": "mov3", "title": "Frozen", "duration": "130 menit", "genre": "Family, Musical", "sutradara": "Jennifer Lee, Chris Buck", "rating_usia": "PG", "price": "Rp40.000"},
@@ -57,71 +57,57 @@ def hapus_film(movie_id: str):
 # ==============================
 # CRUD STUDIO
 # ==============================
+
+
+# Database Studio
 list_studio = [
-    {"id_studio": "st1", "id_movie": "mov1", "title": "Avengers: Endgame"},
-    {"id_studio": "st2", "id_movie": "mov2", "title": "The Conjuring"},
-    {"id_studio": "st3", "id_movie": "mov3", "title": "Frozen"},
-    {"id_studio": "st4", "id_movie": "mov4", "title": "Komang"},
+    {"id": "st1", "name": "Studio 1", "capacity": 96},
+    {"id": "st2", "name": "Studio 2", "capacity": 96},
+    {"id": "st3", "name": "Studio 3", "capacity": 96},
+    {"id": "st4", "name": "Studio 4", "capacity": 96},
 ]
 
+
+# CREATE - Tambah Studio
 @router.post("/studios")
 def tambah_studio(studio: Studio):
-    # Cek ID studio duplikat
+    # Cek apakah ID sudah ada
     for st in list_studio:
-        if st["id_studio"] == studio.id_studio:
+        if st["id"] == studio.id:
             raise HTTPException(status_code=400, detail="ID studio sudah ada")
 
-    # Pastikan ID movie ada
-    film_ditemukan = next((f for f in list_film if f["id"] == studio.id_movie), None)
-    if not film_ditemukan:
-        raise HTTPException(status_code=404, detail="ID movie tidak ditemukan di daftar film")
+    list_studio.append(studio.dict())
+    return {"message": "Studio berhasil ditambahkan", "data": studio}
 
-    # Tambahkan studio baru
-    data_baru = {
-        "id_studio": studio.id_studio,
-        "id_movie": studio.id_movie,
-        "title": film_ditemukan["title"]
-    }
-    list_studio.append(data_baru)
-    return {"message": "Studio berhasil ditambahkan", "data": data_baru}
-
-
+# READ - Lihat semua Studio
 @router.get("/studios")
 def lihat_semua_studio():
     if not list_studio:
         raise HTTPException(status_code=404, detail="Belum ada studio yang terdaftar")
     return {"message": "Daftar semua studio berhasil diambil", "data": list_studio}
 
-
+# READ - Lihat satu Studio
 @router.get("/studios/{studio_id}")
 def lihat_detail_studio(studio_id: str):
     for st in list_studio:
-        if st["id_studio"] == studio_id:
+        if st["id"] == studio_id:
             return {"message": "Detail studio ditemukan", "data": st}
     raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
 
-
+# UPDATE - Perbarui Studio
 @router.put("/studios/{studio_id}")
 def perbarui_studio(studio_id: str, studio: Studio):
     for idx, st in enumerate(list_studio):
-        if st["id_studio"] == studio_id:
-            film_ditemukan = next((f for f in list_film if f["id"] == studio.id_movie), None)
-            if not film_ditemukan:
-                raise HTTPException(status_code=404, detail="ID movie tidak ditemukan")
-
-            list_studio[idx] = {
-                "id_studio": studio_id,
-                "id_movie": studio.id_movie,
-                "title": film_ditemukan["title"]
-            }
-            return {"message": "Data studio berhasil diperbarui", "data": list_studio[idx]}
+        if st["id"] == studio_id:
+            list_studio[idx] = studio.dict()
+            return {"message": "Data studio berhasil diperbarui", "data": studio}
     raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
 
-
+# DELETE - Hapus Studio
 @router.delete("/studios/{studio_id}")
 def hapus_studio(studio_id: str):
     for idx, st in enumerate(list_studio):
-        if st["id_studio"] == studio_id:
+        if st["id"] == studio_id:
             del list_studio[idx]
             return {"message": f"Studio dengan ID {studio_id} berhasil dihapus"}
     raise HTTPException(status_code=404, detail="Studio tidak ditemukan")
