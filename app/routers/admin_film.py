@@ -10,6 +10,8 @@ list_film = [{"id": "mov1", "title": "Avengers: Endgame", "duration": "200 menit
 {"id": "mov4", "title": "Komang", "duration": "130 menit", "genre": "Drama, Romance", "sutradara": "Naya Anindita", "rating_usia": "13+", "price": "Rp40.000"}
 ]
 
+# =============================================== API FILM ================================================
+
 # CREATE - Tambah Film
 @router.post("/movies")
 def tambah_film(movie: Movie):
@@ -54,10 +56,7 @@ def hapus_film(movie_id: str):
     raise HTTPException(status_code=404, detail="Film tidak ditemukan")
 
 
-# ==============================
-# CRUD STUDIO
-# ==============================
-
+# =============================================== API STUDIO ================================================
 
 # Database Studio
 list_studio = [

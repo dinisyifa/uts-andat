@@ -1,25 +1,23 @@
 # app/routers/user_cart.py
 from fastapi import APIRouter, HTTPException
+import uuid
 from typing import List, Dict, Any
 from app.models import CartAddItem, CartItemResponse, TransactionDetail, PreTransactionResponse, PaymentMethodRequest
 from app.routers.admin_jadwal import list_jadwal
 from app.routers.admin_film import list_film
-import uuid
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
-# ===============================
-# SIMULASI DATABASE SEMENTARA
-# ===============================
+# Database sementara 
 cart_items: List[Dict[str, Any]] = []
 transactions: List[Dict[str, Any]] = []
 
+# =============================================== API KERANJANG ================================================
 
-# ===============================
-# POST /user/cart/add
-# ===============================
+# CREATE - Tambah item ke cart
 @router.post("/cart/add")
-def add_to_cart(item: CartAddItem):
+def menambahkan_ke_keranjang(item: CartAddItem):
     """
     Menambahkan tiket ke keranjang user.
     """
@@ -60,22 +58,18 @@ def add_to_cart(item: CartAddItem):
     return {"message": "Tiket berhasil ditambahkan ke keranjang", "data": cart_item}
 
 
-# ===============================
-# GET /user/cart
-# ===============================
+# GET - Lihat isi keranjang
 @router.get("/cart")
-def get_cart():
+def lihat_isi_keranjang():
     if not cart_items:
         raise HTTPException(status_code=404, detail="Keranjang kosong.")
     total = sum(i["price"] for i in cart_items)
     return {"message": "Isi keranjang berhasil diambil", "total_harga": total, "items": cart_items}
 
 
-# ===============================
-# DELETE /user/cart/remove/{item_id}
-# ===============================
+# DELETE - Hapus item dari cart
 @router.delete("/cart/remove/{item_id}")
-def remove_from_cart(item_id: str):
+def hapus_dari_keranjang(item_id: str):
     for item in cart_items:
         if item["item_id"] == item_id:
             cart_items.remove(item)
@@ -87,9 +81,11 @@ def remove_from_cart(item_id: str):
 pending_orders: Dict[str, Any] = {}
 transaction_history: List[Dict[str, Any]] = []
 
+# =============================================== API CHECKOUT ================================================
 
+# CREATE - Checkout
 @router.post("/checkout/payment", response_model=PreTransactionResponse)
-def select_payment_method(payload: PaymentMethodRequest):
+def metode_pembayaran(payload: PaymentMethodRequest):
     """
     Langkah 1: User memilih metode pembayaran.
     Sistem membuat pesanan sementara yang berlaku 5 menit.
@@ -154,12 +150,9 @@ def select_payment_method(payload: PaymentMethodRequest):
         tickets=clean_tickets
     )
 
-
-# ===============================
-# GET /user/checkout/{order_id}/confirm
-# ===============================
+# GET - Konfirmasi checkout
 @router.get("/checkout/{order_id}/confirm", response_model=TransactionDetail)
-def confirm_checkout(order_id: str):
+def konfirmasi_pembayaran(order_id: str):
     """
     Langkah 2: User mengonfirmasi pembayaran (finalisasi transaksi).
     """

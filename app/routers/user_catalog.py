@@ -8,11 +8,11 @@ from app.routers.admin_jadwal import list_jadwal
 
 router = APIRouter()
 
-# ===============================
-# GET /user/now_playing
-# ===============================
+# =============================================== API KATALOG ================================================
+
+# READ - Lihat semua film yang sedang tayang
 @router.get("/now_playing")
-def get_now_playing():
+def now_playing():
     """
     Menampilkan daftar semua film yang sedang tayang.
     (Mengambil dari list_film di admin_film.py)
@@ -38,11 +38,9 @@ def get_now_playing():
     }
 
 
-# ===============================
-# GET /user/movies/{movie_id}/details
-# ===============================
-@router.get("/movies/{movie_id}/details")
-def get_movie_details(movie_id: str):
+# READ - Lihat detail film dan jadwalnya
+@router.get("/now_playing/{movie_id}/details")
+def detail_film(movie_id: str):
     """
     Menampilkan detail film dan semua jadwal tayangnya.
     """
@@ -73,11 +71,7 @@ def get_movie_details(movie_id: str):
         ]
     }
 
-
-# ===============================
-# GET /user/schedules/{schedule_id}/seats
-# ===============================
-
+# layout kursi 
 ROWS = 8
 COLS = 12
 AISLE_AFTER_COL = 6
@@ -101,14 +95,11 @@ def _ensure_matrix(schedule_id: Any) -> List[List[str]]:
         SEATS_BY_SCHEDULE[sid] = _empty_matrix()
     return SEATS_BY_SCHEDULE[sid]
 
-# --- demo opsional (boleh dihapus kalau tak perlu) ---
-TODAY = "2025-10-07"
-for demo_id in ("101", "102", "103"):
-    _ensure_matrix(demo_id)
+# =============================================== API KURSI ================================================
 
-
+# READ - Lihat denah kursi untuk jadwal tertentu
 @router.get("/schedules/{schedule_id}/seats")
-def seat_map(schedule_id: str):
+def denah_kursi(schedule_id: str):
     _ensure_matrix(schedule_id)
     mat = SEATS_BY_SCHEDULE.get(_sid(schedule_id))
     if mat is None:
