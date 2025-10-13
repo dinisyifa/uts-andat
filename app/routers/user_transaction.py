@@ -1,112 +1,112 @@
-# file: app/routers/user_transaction.py
-
-from datetime import datetime, timedelta
+# app/routers/user_cart.py
+from fastapi import APIRouter, HTTPException
 import uuid
-from typing import List
-from fastapi import APIRouter, HTTPException, status
-from app.models import CartAddItem, CartItemResponse, TransactionDetail, PaymentMethodRequest, PreTransactionResponse
-
+from typing import List, Dict, Any
+from app.models import CartAddItem, CartItemResponse, TransactionDetail, PreTransactionResponse, PaymentMethodRequest
+from app.routers.admin_jadwal import list_jadwal
 from app.routers.admin_film import list_film
-from app.routers.admin_jadwal import raw_jadwal_template
-
-# variabel global
-cart = []
-transaction_history = []
-pending_orders = {}
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
-# ==========================================
-# API - MANAJEMEN KERANJANGB (USER)
-# ==========================================
+# Database sementara 
+cart_items: List[Dict[str, Any]] = []
+transactions: List[Dict[str, Any]] = []
 
+# =============================================== API KERANJANG ================================================
+
+# CREATE - Tambah item ke cart
 @router.post("/cart/add")
-def add_ticket_to_cart(item: CartAddItem):
+def menambahkan_ke_keranjang(item: CartAddItem):
     """
-    Menambahkan tiket ke keranjang berdasarkan Judul Film, Jam Tayang, dan Nomor Kursi.
+    Menambahkan tiket ke keranjang user.
     """
-    # ======================================================================
-    # Langkah 1: Cari movie_id berdasarkan movie_title dari input user.
-    movie_found = next((f for f in list_film if f.get("title") == item.movie_title), None)
-    if not movie_found:
-        raise HTTPException(status_code=404, detail=f"Film dengan judul '{item.movie_title}' tidak ditemukan.")
-    
-    movie_id_found = movie_found.get("id")
+    # Cek validitas jadwal
+    schedule = next((j for j in list_jadwal if j["id_jadwal"] == item.schedule_id), None)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan.")
 
-    # Langkah 2: Cari jadwal yang cocok berdasarkan movie_id DAN show_time.
-    matching_schedules = [
-        s for s in raw_jadwal_template 
-        if s.get("movie_id") == movie_id_found and s.get("time") == item.show_time
-    ]
+    # Cek validitas kursi
+    seat_found = False
+    for row in schedule["seats"]:
+        for seat in row:
+            if seat["seat"] == item.seat_number and seat["available"]:
+                seat_found = True
+                break
+    if not seat_found:
+        raise HTTPException(status_code=400, detail="Kursi tidak tersedia atau sudah dipesan.")
 
-    # cari list jadwal berdasarkan item.schedule_id
-    schedule_found = next((s for s in raw_jadwal_template if s.get("id") == item.schedule_id), None)
-    if not schedule_found:
-        raise HTTPException(status_code=404, detail=f"Jadwal dengan ID '{item.schedule_id}' tidak ditemukan.")
+    # Ambil data film
+    film = next((f for f in list_film if f["title"].lower() == item.movie_title.lower()), None)
+    if not film:
+        raise HTTPException(status_code=404, detail="Film tidak ditemukan.")
 
-    # Cek ketersediaan kursi
-    seat = schedule_found.get("seats", {}).get(item.seat_number)
-    if not seat:
-        raise HTTPException(status_code=404, detail=f"Kursi '{item.seat_number}' tidak ditemukan di jadwal ini.")
-    if not seat.get("available"):
-        raise HTTPException(status_code=400, detail=f"Kursi '{item.seat_number}' sudah tidak tersedia.")
-
-    # Cek duplikat di keranjang
-    for cart_item in cart:
-        if cart_item["schedule_id"] == item.schedule_id and cart_item["seat_number"] == item.seat_number:
-            raise HTTPException(status_code=400, detail=f"Tiket untuk kursi '{item.seat_number}' di jadwal ini sudah ada di keranjang.")
-
-    # Cari detail film
-    movie_found = next((f for f in list_film if f.get("id") == schedule_found.get("movie_id")), None)
-    if not movie_found:
-        raise HTTPException(status_code=404, detail="Film untuk jadwal ini tidak ditemukan.")
-
-    # Buat item keranjang baru dengan aman
-    new_cart_item = {
-        "item_id": f"ITEM-{uuid.uuid4().hex[:6].upper()}",
-        "schedule_id": schedule_found.get("id"),
-        "movie_id": movie_found.get("id"),
-        "movie_title": movie_found.get("title"),
-        "schedule": f"{schedule_found.get('date', '')} {schedule_found.get('time', '')}",
-        "studio": schedule_found.get("studio", "N/A"),
+    # Buat item keranjang
+    item_id = str(uuid.uuid4())[:8]
+    cart_item = {
+        "item_id": item_id,
+        "schedule_id": item.schedule_id,
+        "movie_id": film["id"],
+        "movie_title": film["title"],
+        "schedule": f"{schedule['date']} {schedule['time']}",
+        "studio": schedule["studio_name"],
         "seat_number": item.seat_number,
-        "price": movie_found.get("price")
+        "price": int(film["price"].replace("Rp", "").replace(".", ""))  # convert harga ke int
     }
-    cart.append(new_cart_item)
-    return {"message": "Tiket berhasil ditambahkan ke keranjang", "data": new_cart_item}
+
+    cart_items.append(cart_item)
+    return {"message": "Tiket berhasil ditambahkan ke keranjang", "data": cart_item}
 
 
+# GET - Lihat isi keranjang
 @router.get("/cart")
-def view_cart():
-    if not cart:
-        return {"message": "Keranjang belanja saat ini kosong.", "data": []}
-    return {"message": "Isi keranjang berhasil diambil", "data": cart}
+def lihat_isi_keranjang():
+    if not cart_items:
+        raise HTTPException(status_code=404, detail="Keranjang kosong.")
+    total = sum(i["price"] for i in cart_items)
+    return {"message": "Isi keranjang berhasil diambil", "total_harga": total, "items": cart_items}
 
 
+# DELETE - Hapus item dari cart
 @router.delete("/cart/remove/{item_id}")
-def remove_ticket_from_cart(item_id: str):
-    global cart
-    for idx, item in enumerate(cart):
-        if item.get("item_id") == item_id:
-            del cart[idx]
-            return {"message": f"Item dengan ID {item_id} berhasil dihapus dari keranjang"}
-    raise HTTPException(status_code=404, detail=f"Item dengan ID '{item_id}' tidak ditemukan di keranjang.")
+def hapus_dari_keranjang(item_id: str):
+    for item in cart_items:
+        if item["item_id"] == item_id:
+            cart_items.remove(item)
+            return {"message": f"Item {item_id} berhasil dihapus dari keranjang"}
+    raise HTTPException(status_code=404, detail="Item tidak ditemukan di keranjang.")
 
 
-# ==========================================
-# API - PROSES CHECKOUT DUA LANGKAH (BARU)
-# ==========================================
+# Simulasi penyimpanan pesanan sementara & riwayat transaksi
+pending_orders: Dict[str, Any] = {}
+transaction_history: List[Dict[str, Any]] = []
 
-# LANGKAH 1: User memilih metode pembayaran
+# =============================================== API CHECKOUT ================================================
+
+# CREATE - Checkout
 @router.post("/checkout/payment", response_model=PreTransactionResponse)
-def select_payment_method(payload: PaymentMethodRequest):
-    if not cart:
+def metode_pembayaran(payload: PaymentMethodRequest):
+    """
+    Langkah 1: User memilih metode pembayaran.
+    Sistem membuat pesanan sementara yang berlaku 5 menit.
+    """
+    if not cart_items:
         raise HTTPException(status_code=400, detail="Keranjang belanja kosong.")
 
     # Validasi ulang semua kursi sebelum membuat pesanan sementara
-    for item in cart:
-        schedule = next((s for s in raw_jadwal_template if s.get("id") == item.get("schedule_id")), None)
-        if not schedule or not schedule.get("seats", {}).get(item.get("seat_number"), {}).get("available"):
+    for item in cart_items:
+        schedule = next((s for s in list_jadwal if s.get("id_jadwal") == item.get("schedule_id")), None)
+        if not schedule:
+            raise HTTPException(status_code=404, detail=f"Jadwal {item.get('schedule_id')} tidak ditemukan.")
+        
+        # Cek apakah kursi masih tersedia (dalam format baris kursi list)
+        seat_available = False
+        for row in schedule["seats"]:
+            for seat in row:
+                if seat["seat"] == item["seat_number"] and seat["available"]:
+                    seat_available = True
+                    break
+        if not seat_available:
             raise HTTPException(
                 status_code=409,
                 detail=f"Checkout gagal. Kursi '{item.get('seat_number')}' sudah tidak tersedia lagi."
@@ -114,29 +114,32 @@ def select_payment_method(payload: PaymentMethodRequest):
 
     # Buat pesanan sementara
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
-    total_price = sum(item.get("price", 0) for item in cart)
-    expires_at = datetime.utcnow() + timedelta(minutes=5) # Pesanan batal dalam 5 menit
+    total_price = sum(item.get("price", 0) for item in cart_items)
+    expires_at = datetime.utcnow() + timedelta(minutes=5)  # Berlaku 5 menit
 
     # Buat daftar tiket yang bersih untuk respons
-    clean_tickets = []
-    for item in cart:
-        clean_ticket = {
-            "item_id": item.get("item_id"), "movie_title": item.get("movie_title"),
-            "schedule": item.get("schedule"), "studio": item.get("studio"),
-            "seat_number": item.get("seat_number"), "price": item.get("price")
+    clean_tickets = [
+        {
+            "item_id": item["item_id"],
+            "movie_title": item["movie_title"],
+            "schedule": item["schedule"],
+            "studio": item["studio"],
+            "seat_number": item["seat_number"],
+            "price": item["price"]
         }
-        clean_tickets.append(clean_ticket)
-    
-    # Simpan data pesanan sementara di memori
+        for item in cart_items
+    ]
+
+    # Simpan pesanan sementara
     pending_orders[order_id] = {
         "total_price": total_price,
         "payment_method": payload.payment_method,
         "expires_at": expires_at,
-        "tickets_full_data": list(cart) # Simpan data lengkap dari keranjang
+        "tickets_full_data": list(cart_items)  # Simpan data lengkap keranjang
     }
 
-    # Kosongkan keranjang karena sudah masuk ke tahap pesanan
-    cart.clear()
+    # Kosongkan keranjang setelah buat pesanan sementara
+    cart_items.clear()
 
     # Kembalikan detail pesanan sementara ke user
     return PreTransactionResponse(
@@ -147,48 +150,52 @@ def select_payment_method(payload: PaymentMethodRequest):
         tickets=clean_tickets
     )
 
-
-# LANGKAH 2: User mengonfirmasi pesanan
+# GET - Konfirmasi checkout
 @router.get("/checkout/{order_id}/confirm", response_model=TransactionDetail)
-def confirm_checkout(order_id: str):
-    # Cari pesanan sementara
+def konfirmasi_pembayaran(order_id: str):
+    """
+    Langkah 2: User mengonfirmasi pembayaran (finalisasi transaksi).
+    """
     order = pending_orders.get(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Pesanan tidak ditemukan atau sudah kedaluwarsa.")
     
-    # Cek jika pesanan sudah kedaluwarsa
+    # Cek masa berlaku
     if datetime.utcnow() > order["expires_at"]:
-        # (Logika tambahan: kembalikan status kursi menjadi 'available' jika perlu)
         pending_orders.pop(order_id, None)
         raise HTTPException(status_code=410, detail="Pesanan sudah kedaluwarsa.")
 
-    # Jika valid, finalisasi transaksi
-    # 1. Ubah status kursi menjadi "booked" secara permanen
+    # Tandai kursi sebagai booked permanen
     for item in order["tickets_full_data"]:
-        schedule = next((s for s in raw_jadwal_template if s.get("id") == item.get("schedule_id")), None)
+        schedule = next((s for s in list_jadwal if s.get("id_jadwal") == item.get("schedule_id")), None)
         if schedule:
-            schedule["seats"][item["seat_number"]]["available"] = False
-    
-    # 2. Hasilkan kode booking final
+            for row in schedule["seats"]:
+                for seat in row:
+                    if seat["seat"] == item["seat_number"]:
+                        seat["available"] = False
+
+    # Hasilkan kode booking final
     booking_code = f"BK-{uuid.uuid4().hex[:8].upper()}"
 
-    # 3. Buat data transaksi final
+    # Buat data transaksi final
     final_transaction = {
         "booking_code": booking_code,
         "total_price": order["total_price"],
         "tickets": [
-             {
-                "item_id": item.get("item_id"), "movie_title": item.get("movie_title"),
-                "schedule": item.get("schedule"), "studio": item.get("studio"),
-                "seat_number": item.get("seat_number"), "price": item.get("price")
-            } for item in order["tickets_full_data"]
+            {
+                "item_id": item["item_id"],
+                "movie_title": item["movie_title"],
+                "schedule": item["schedule"],
+                "studio": item["studio"],
+                "seat_number": item["seat_number"],
+                "price": item["price"]
+            }
+            for item in order["tickets_full_data"]
         ]
     }
-    
-    # 4. Simpan ke riwayat transaksi
+
+    # Simpan ke riwayat transaksi dan hapus dari pending
     transaction_history.append(final_transaction)
-    
-    # 5. Hapus dari daftar pesanan sementara
     pending_orders.pop(order_id, None)
-    
+
     return TransactionDetail(**final_transaction)
