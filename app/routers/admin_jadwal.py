@@ -78,9 +78,10 @@ list_jadwal: List[Dict[str, Any]] = []
 for r in raw_jadwal_template:
     film = find_film(r["movie_id"])
     studio = find_studio(r["studio_id"])
-    if not film or not studio:
-        # skip jika referensi tidak ada — user tidak mau duplikasi film/studio
-        continue
+    if not film:
+        film = {"title": r["movie_id"]}
+    if not studio:
+        studio = {"name": r["studio_id"]}
     jadwal = {
         "id_jadwal": r["id"],
         "movie_id": r["movie_id"],
