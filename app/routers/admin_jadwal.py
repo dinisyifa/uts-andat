@@ -152,12 +152,12 @@ def tambah_jadwal(payload: Schedule):
 
 # UPDATE - Perbarui jadwal
 @router.put("/schedules/{schedule_id}")
-def update_jadwal(id_jadwal: str, updated_data: Schedule):
+def update_jadwal(schedule_id: str, updated_data: Schedule):
     """
     Memperbarui data jadwal berdasarkan id_jadwal.
     """
     # Cari jadwal yang sesuai
-    jadwal = next((j for j in list_jadwal if j["id_jadwal"] == id_jadwal), None)
+    jadwal = next((j for j in list_jadwal if j["id_jadwal"] == schedule_id), None)
     if not jadwal:
         raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
 
@@ -180,7 +180,7 @@ def update_jadwal(id_jadwal: str, updated_data: Schedule):
     jadwal["time"] = updated_data.time
 
     return {
-        "message": f"Jadwal {id_jadwal} berhasil diperbarui",
+        "message": f"Jadwal {schedule_id} berhasil diperbarui",
         "data": jadwal
     }
 
@@ -191,4 +191,4 @@ def hapus_jadwal(schedule_id: str):
         if j.get("id_jadwal") == schedule_id:
             list_jadwal.remove(j)
             return {"message": f"Jadwal {schedule_id} berhasil dihapus"}
-    raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")
+    raise HTTPException(status_code=404, detail="Jadwal tidak ditemukan")

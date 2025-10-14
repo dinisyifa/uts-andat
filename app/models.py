@@ -29,7 +29,7 @@ class Movie(BaseModel):
 class Studio(BaseModel):
     id: str          # contoh: "st1"
     name: str           # contoh: "Studio 1"
-    capacity: int
+    capacity: Optional [int] = None
 
 # ===============================
 # MODEL UNTUK JADWAL PENAYANGAN #dini
