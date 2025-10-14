@@ -1,12 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
-from datetime import datetime, timedelta
 from app.routers import user_catalog
 from app.routers.admin_film import list_film
 from app.routers.admin_jadwal import list_jadwal
 
-# Setup aplikasi sementara untuk uji
+# Setup aplikasi FastAPI sementara untuk pengujian
 app = FastAPI()
 app.include_router(user_catalog.router)
 client = TestClient(app)
@@ -18,19 +17,20 @@ def setup_dummy_data():
     list_film.clear()
     list_jadwal.clear()
     user_catalog.SEATS_BY_SCHEDULE.clear()
-    user_catalog.HOLDS.clear()
 
     # Tambahkan 1 film dan 1 jadwal
     list_film.append({
-        "id": "f1",
+        "id": "mov1",
         "title": "Inception",
         "duration": 120,
         "price": 50000,
-        "synopsis": "A mind-bending thriller."
+        "genre": "Sci-Fi",
+        "rating_usia": "13+",
+        "sutradara": "Christopher Nolan",
     })
     list_jadwal.append({
         "id_jadwal": "sch1",
-        "movie_id": "f1",
+        "movie_id": "mov1",
         "movie_title": "Inception",
         "studio_name": "Studio 1",
         "date": "2025-10-10",
@@ -42,86 +42,64 @@ def setup_dummy_data():
 # TEST 1 - now_playing()
 # ================================================================
 def test_now_playing_success():
+    """Menampilkan daftar film yang sedang tayang"""
     res = client.get("/now_playing")
     assert res.status_code == 200
     data = res.json()
     assert data["count"] == 1
-    assert data["movies"][0]["title"] == "Inception"
+    assert data["data"][0]["title"] == "Inception"
+    assert data["message"] == "Daftar film yang sedang tayang berhasil diambil"
 
 
 def test_now_playing_no_movies():
+    """Menangani kondisi ketika tidak ada film"""
     list_film.clear()
     res = client.get("/now_playing")
     assert res.status_code == 404
-    assert res.json()["detail"] == "Belum ada film"
+    assert res.json()["detail"] == "Tidak ada film yang sedang tayang."
 
 
 # ================================================================
-# TEST 2 - user_movies()
+# TEST 2 - detail_film()
 # ================================================================
-def test_user_movies():
-    res = client.get("/movies")
+def test_detail_film_success():
+    """Menampilkan detail film dan daftar jadwalnya"""
+    res = client.get("/now_playing/mov1/details")
     assert res.status_code == 200
     data = res.json()
-    assert len(data["movies"]) == 1
-    assert data["movies"][0]["title"] == "Inception"
-    assert len(data["movies"][0]["showtimes"]) == 1
+    assert data["title"] == "Inception"
+    assert data["schedules"][0]["studio"] == "Studio 1"
+    assert data["schedules"][0]["waktu"] == "19:00"
 
 
-# ================================================================
-# TEST 3 - movie_details()
-# ================================================================
-def test_movie_details_success():
-    res = client.get("/movies/f1/details")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["movie"]["title"] == "Inception"
-    assert len(data["showtimes"]) == 1
-    assert "seat_summary" in data
-
-
-def test_movie_details_not_found():
-    res = client.get("/movies/f999/details")
+def test_detail_film_not_found():
+    """Menangani film dengan ID yang tidak ada"""
+    res = client.get("/now_playing/mov999/details")
     assert res.status_code == 404
-    assert res.json()["detail"] == "Film tidak ditemukan"
+    assert res.json()["detail"] == "Film dengan ID mov999 tidak ditemukan."
 
 
 # ================================================================
-# TEST 4 - seat_map
+# TEST 3 - denah_kursi()
 # ================================================================
-def test_seat_map_success():
+def test_denah_kursi_success():
+    """Menampilkan peta kursi berdasarkan jadwal"""
     res = client.get("/schedules/sch1/seats")
     assert res.status_code == 200
     data = res.json()
-    assert data["rows"] == 8
-    assert data["cols"] == 12
+    assert data["schedule_id"] == "sch1"
     assert "display" in data
+    # Baris pertama adalah layar
+    assert "SCREEN" in data["display"][0]
+    # Baris kedua ada nomor kursi kiri dan kanan
+    assert "1" in data["display"][1]
+    assert "12" in data["display"][1]
 
 
-def test_seat_map_not_found():
-    res = client.get("/schedules/unknown/seats")
-    assert res.status_code == 200  # Auto init seats
-    assert "seats" in res.json()
-
-
-# ================================================================
-# TEST 5 - hold, confirm, release kursi
-# ================================================================
-def test_hold_confirm_release_cycle():
-    # HOLD kursi
-    res_hold = client.post("/schedules/sch1/hold", params={"seats": "A1,A2"})
-    assert res_hold.status_code == 200
-    held = res_hold.json()["held"]
-    assert "A1" in held
-
-    # CONFIRM kursi
-    res_confirm = client.post("/schedules/sch1/confirm", params={"seats": "A1"})
-    assert res_confirm.status_code == 200
-    sold = res_confirm.json()["sold"]
-    assert "A1" in sold
-
-    # RELEASE kursi (A2 yang masih hold)
-    res_release = client.post("/schedules/sch1/release", params={"seats": "A2"})
-    assert res_release.status_code == 200
-    released = res_release.json()["released"]
-    assert "A2" in released
+def test_denah_kursi_auto_initialize():
+    """Jika jadwal belum punya data kursi, sistem membuat denah baru otomatis"""
+    res = client.get("/schedules/unknown_id/seats")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["schedule_id"] == "unknown_id"
+    assert len(data["display"]) == 10  # 8 baris kursi + header + nomor kursi

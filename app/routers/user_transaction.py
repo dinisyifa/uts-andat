@@ -87,7 +87,7 @@ transaction_history: List[Dict[str, Any]] = []
 @router.post("/checkout/payment", response_model=PreTransactionResponse)
 def metode_pembayaran(payload: PaymentMethodRequest):
     """
-    Langkah 1: User memilih metode pembayaran.
+    Langkah 1: User memilih metode pembayaran, QRIS atau Debit/Credit Card.
     Sistem membuat pesanan sementara yang berlaku 5 menit.
     """
     if not cart_items:

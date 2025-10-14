@@ -94,22 +94,22 @@ def test_get_all_studios():
 
 def test_create_studio_success():
     new_studio = {
-        "id_studio": "st99",
-        "id_movie": "mov1",
-        "title" : "Frozen"
+        "id": "st99",
+        "name": "Studio 99",
+        "capacity" : 96
     }
     response = client.post("/studios", json=new_studio)
     assert response.status_code == 200
     data = response.json()
-    assert data["data"]["id_studio"] == "st99"
-    assert data["data"]["title"] == "Avengers: Endgame"
+    assert data["data"]["id"] == "st99"
+    assert data["data"]["name"] == "Studio 99"
 
 
 def test_create_studio_duplicate_id():
     new_studio = {
-        "id_studio": "st99",
-        "id_movie": "mov1",
-        "title" : "Frozen"
+        "id": "st99",
+        "name": "Studio 99",
+        "capacity" : 96
     }
     response = client.post("/studios", json=new_studio)
     assert response.status_code == 400
@@ -118,14 +118,14 @@ def test_create_studio_duplicate_id():
 
 def test_update_studio():
     updated_studio = {
-        "id_studio": "st99",
-        "id_movie": "mov2",
-        "title" : "Frozen"
+        "id": "st99",
+        "name": "Studio 99",
+        "capacity" : 96
     }
     response = client.put("/studios/st99", json=updated_studio)
     assert response.status_code == 200
     data = response.json()
-    assert data["data"]["title"] == "The Conjuring"
+    assert data["data"]["capacity"] == 96
 
 
 def test_delete_studio():
